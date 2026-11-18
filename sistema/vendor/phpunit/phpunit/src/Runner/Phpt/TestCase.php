@@ -72,17 +72,12 @@ use Throwable;
  *
  * @see https://qa.php.net/phpt_details.php
  */
-final class TestCase implements Reorderable, SelfDescribing, Test
+final readonly class TestCase implements Reorderable, SelfDescribing, Test
 {
     /**
      * @var non-empty-string
      */
-    private readonly string $filename;
-
-    /**
-     * @var list<string>
-     */
-    private array $groups = [];
+    private string $filename;
 
     /**
      * @param non-empty-string $filename
@@ -275,26 +270,6 @@ final class TestCase implements Reorderable, SelfDescribing, Test
     public function sortId(): string
     {
         return $this->filename;
-    }
-
-    /**
-     * @return list<string>
-     *
-     * @internal This method is not covered by the backward compatibility promise for PHPUnit
-     */
-    public function groups(): array
-    {
-        return $this->groups;
-    }
-
-    /**
-     * @param list<string> $groups
-     *
-     * @internal This method is not covered by the backward compatibility promise for PHPUnit
-     */
-    public function setGroups(array $groups): void
-    {
-        $this->groups = $groups;
     }
 
     /**

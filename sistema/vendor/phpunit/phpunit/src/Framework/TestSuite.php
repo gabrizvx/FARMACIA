@@ -23,7 +23,6 @@ use function sprintf;
 use function str_ends_with;
 use function str_starts_with;
 use function trim;
-use AssertionError;
 use Iterator;
 use IteratorAggregate;
 use PHPUnit\Event;
@@ -175,9 +174,13 @@ class TestSuite implements IteratorAggregate, Reorderable, Test
             $groups[] = 'default';
         }
 
-        $id = $test->valueObjectForEvents()->id();
+        if ($test instanceof TestCase) {
+            $id = $test->valueObjectForEvents()->id();
 
-        $test->setGroups($groups);
+            $test->setGroups($groups);
+        } else {
+            $id = $test->valueObjectForEvents()->id();
+        }
 
         foreach ($groups as $group) {
             if (!isset($this->groups[$group])) {
@@ -236,7 +239,7 @@ class TestSuite implements IteratorAggregate, Reorderable, Test
     {
         try {
             if (str_ends_with($filename, '.phpt') && is_file($filename)) {
-                $this->addTest(new PhptTestCase($filename), $groups);
+                $this->addTest(new PhptTestCase($filename));
             } else {
                 $this->addTestSuite(
                     (new TestSuiteLoader)->load($filename),
@@ -665,7 +668,7 @@ class TestSuite implements IteratorAggregate, Reorderable, Test
                 $calledMethods[] = $calledMethod;
             }
 
-            if (isset($t) && ($t instanceof IncompleteTest || $t instanceof SkippedTest)) {
+            if (isset($t) && $t instanceof SkippedTest) {
                 $emitter->testSuiteSkipped(
                     $testSuiteValueObjectForEvents,
                     $t->getMessage(),
@@ -675,7 +678,7 @@ class TestSuite implements IteratorAggregate, Reorderable, Test
             }
 
             if (isset($t)) {
-                if ($t instanceof AssertionError || $t instanceof AssertionFailedError) {
+                if ($t instanceof AssertionFailedError) {
                     $emitter->beforeFirstTestMethodFailed(
                         $this->name,
                         $calledMethod,
@@ -732,9 +735,6 @@ class TestSuite implements IteratorAggregate, Reorderable, Test
 
             try {
                 call_user_func([$this->name, $method]);
-            } catch (IncompleteTest|SkippedTest) {
-                // the tests of the test class have already been run, so they
-                // can no longer be marked as incomplete or skipped
             } catch (Throwable $t) {
             }
 
@@ -746,7 +746,7 @@ class TestSuite implements IteratorAggregate, Reorderable, Test
             $calledMethods[] = $calledMethod;
 
             if (isset($t)) {
-                if ($t instanceof AssertionError || $t instanceof AssertionFailedError) {
+                if ($t instanceof AssertionFailedError) {
                     $emitter->afterLastTestMethodFailed(
                         $this->name,
                         $calledMethod,

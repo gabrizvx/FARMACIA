@@ -17,7 +17,7 @@ class Url implements ParameterizedRule
     /**
      * Specify the allowed URL protocols.
      *
-     * @param  string[]  $protocols
+     * @param  string[]|null  $protocols
      */
     public function protocols(array $protocols): static
     {

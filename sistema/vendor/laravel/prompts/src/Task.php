@@ -9,7 +9,6 @@ use RuntimeException;
 
 class Task extends Prompt
 {
-    use Concerns\RendersAnimations;
     use InteractsWithStrings;
 
     /**
@@ -110,7 +109,7 @@ class Task extends Prompt
 
         $this->capturePreviousNewLines();
 
-        if ($this->shouldRenderStatically()) {
+        if (! static::output()->isDecorated() || ! (function_exists('pcntl_fork') && function_exists('posix_kill'))) {
             return $this->renderStatically($callback);
         }
 

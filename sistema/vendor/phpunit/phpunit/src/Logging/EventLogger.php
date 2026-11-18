@@ -20,7 +20,6 @@ use function str_repeat;
 use function strlen;
 use PHPUnit\Event\Event;
 use PHPUnit\Event\Tracer\Tracer;
-use PHPUnit\Util\Sanitizer;
 
 /**
  * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
@@ -49,7 +48,7 @@ final readonly class EventLogger implements Tracer
             $flags |= LOCK_EX;
         }
 
-        $lines = preg_split('/\r\n|\r|\n/', Sanitizer::sanitizeControlCharacters($event->asString()));
+        $lines = preg_split('/\r\n|\r|\n/', $event->asString());
 
         if ($lines === false) {
             $lines = [];

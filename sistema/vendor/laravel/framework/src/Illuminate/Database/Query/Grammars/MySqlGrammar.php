@@ -484,7 +484,7 @@ class MySqlGrammar extends Grammar
         if (is_bool($value)) {
             $value = $value ? 'true' : 'false';
         } elseif (is_array($value)) {
-            $value = $this->compileJsonValueCast('?');
+            $value = 'cast(? as json)';
         } else {
             $value = $this->parameter($value);
         }

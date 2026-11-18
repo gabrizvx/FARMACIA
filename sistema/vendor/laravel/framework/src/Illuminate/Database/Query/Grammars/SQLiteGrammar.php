@@ -179,19 +179,13 @@ class SQLiteGrammar extends Grammar
             return '';
         }
 
-        $indexes = array_map('trim', explode(',', $indexHint->index));
+        $index = $indexHint->index;
 
-        foreach ($indexes as $index) {
-            if (! preg_match('/^[a-zA-Z0-9_$]+$/', $index)) {
-                throw new InvalidArgumentException('Index name contains invalid characters.');
-            }
+        if (! preg_match('/^[a-zA-Z0-9_$]+$/', $index)) {
+            throw new InvalidArgumentException('Index name contains invalid characters.');
         }
 
-        if (count($indexes) > 1 || strtolower($indexes[0]) === 'primary') {
-            return '';
-        }
-
-        return "indexed by {$indexes[0]}";
+        return "indexed by {$index}";
     }
 
     /**

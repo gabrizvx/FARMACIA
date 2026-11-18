@@ -381,7 +381,7 @@ class SQLiteGrammar extends Grammar
      *
      * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
      * @param  \Illuminate\Support\Fluent  $command
-     * @return null
+     * @return string
      */
     public function compilePrimary(Blueprint $blueprint, Fluent $command)
     {
@@ -542,7 +542,7 @@ class SQLiteGrammar extends Grammar
      *
      * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
      * @param  \Illuminate\Support\Fluent  $command
-     * @return null
+     * @return string
      */
     public function compileDropPrimary(Blueprint $blueprint, Fluent $command)
     {
@@ -597,7 +597,7 @@ class SQLiteGrammar extends Grammar
      *
      * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
      * @param  \Illuminate\Support\Fluent  $command
-     * @return null
+     * @return array
      *
      * @throws \RuntimeException
      */

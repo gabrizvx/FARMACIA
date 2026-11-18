@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
-
+use Illuminate\Validation\Rule;
 class CategoryController extends Controller
 {
     /**
@@ -12,7 +12,8 @@ class CategoryController extends Controller
      */
     public function index()
     {
-    return view ('settings.categories.index');
+        $categories = Category::all();
+    return view ('settings.categories.index', compact('categories'));
     }
 
     /**
@@ -28,7 +29,13 @@ class CategoryController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request-> validate([
+            'name' => 'required|max:50|unique:categories',
+            'description' => 'nullable|max:255',
+        ]);
+
+        Category::create($validated);
+        return to_route('categories.index')->with('ok', 'categoria registrada correctamente.');
     }
 
     /**
@@ -44,7 +51,7 @@ class CategoryController extends Controller
      */
     public function edit(Category $category)
     {
-        //
+        return view('settings.categories.index', compact('category'));
     }
 
     /**
@@ -52,7 +59,16 @@ class CategoryController extends Controller
      */
     public function update(Request $request, Category $category)
     {
-        //
+        $validated = $request->validate([
+            'name' => [
+                'required',
+                'max:50',
+                Rule::unique('categories', 'name')->ingore($category->id)
+            ],
+            'descripcion' => 'nullable|max:255',
+        ]);
+        $category ->updated($validated);
+        return to_route('categories.index')->with('ok','Categoria actualizada correctamente');
     }
 
     /**
@@ -60,6 +76,7 @@ class CategoryController extends Controller
      */
     public function destroy(Category $category)
     {
-        //
+        $category->delete();
+        return to_route('categories.index')->with('ok','Categoria eliminada correctamente');
     }
 }

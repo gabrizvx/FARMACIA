@@ -938,7 +938,7 @@ trait QueriesRelationships
 
             if ($function === 'exists') {
                 $this->selectRaw(
-                    sprintf('%s as %s', $this->getQuery()->grammar->compileExistsColumn($query->toSql()), $this->getQuery()->grammar->wrap($alias)),
+                    sprintf('exists(%s) as %s', $query->toSql(), $this->getQuery()->grammar->wrap($alias)),
                     $query->getBindings()
                 )->withCasts([$alias => 'bool']);
             } else {

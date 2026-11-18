@@ -12,22 +12,20 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 /**
  * @author Matthew Hall (matthall28@gmail.com)
  * @author Taylor Otwell (taylor@laravel.com)
- *
- * @template TClient of \Ably\AblyRest
  */
 class AblyBroadcaster extends Broadcaster
 {
     /**
      * The AblyRest SDK instance.
      *
-     * @var TClient
+     * @var \Ably\AblyRest
      */
     protected $ably;
 
     /**
      * Create a new broadcaster instance.
      *
-     * @param  TClient  $ably
+     * @param  \Ably\AblyRest  $ably
      */
     public function __construct(AblyRest $ably)
     {
@@ -227,7 +225,7 @@ class AblyBroadcaster extends Broadcaster
     /**
      * Get the underlying Ably SDK instance.
      *
-     * @return TClient
+     * @return \Ably\AblyRest
      */
     public function getAbly()
     {
@@ -237,7 +235,7 @@ class AblyBroadcaster extends Broadcaster
     /**
      * Set the underlying Ably SDK instance.
      *
-     * @param  TClient  $ably
+     * @param  \Ably\AblyRest  $ably
      * @return void
      */
     public function setAbly($ably)

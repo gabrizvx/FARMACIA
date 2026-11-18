@@ -433,10 +433,7 @@ class RouteUrlGenerator
         // will make the initial query string if it wasn't started with strings.
         if (count($keyed) < count($parameters)) {
             $query .= '&'.implode(
-                '&', array_map(
-                    fn ($value) => rawurlencode((string) $value),
-                    $this->getNumericParameters($parameters)
-                )
+                '&', $this->getNumericParameters($parameters)
             );
         }
 

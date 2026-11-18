@@ -1,10 +1,14 @@
 <?php
 
 namespace App\Models;
-
+use Illuminate\Database\Eloquent\Atributes\fillable;
 use Illuminate\Database\Eloquent\Model;
-
+use Illuminate\Database\Eloquent\Relations\HasMany;
+#[fillable('name', 'description')]
 class Category extends Model
 {
-    //
+    public function medicines(): HasMany
+    {
+        return $this->hasMany(Medicine::class);
+    }
 }

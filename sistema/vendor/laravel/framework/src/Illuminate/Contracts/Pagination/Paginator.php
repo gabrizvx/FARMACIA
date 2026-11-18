@@ -132,7 +132,7 @@ interface Paginator
      *
      * @param  string|null  $view
      * @param  array  $data
-     * @return \Illuminate\Contracts\Support\Htmlable
+     * @return string
      */
     public function render($view = null, $data = []);
 }

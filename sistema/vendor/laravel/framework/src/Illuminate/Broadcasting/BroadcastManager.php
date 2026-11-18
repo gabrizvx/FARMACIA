@@ -3,10 +3,8 @@
 namespace Illuminate\Broadcasting;
 
 use Ably\AblyRest;
-use Ably\PubSub\Server as AblyServer;
 use Closure;
 use GuzzleHttp\Client as GuzzleClient;
-use Illuminate\Broadcasting\Broadcasters\Ably2Broadcaster;
 use Illuminate\Broadcasting\Broadcasters\AblyBroadcaster;
 use Illuminate\Broadcasting\Broadcasters\LogBroadcaster;
 use Illuminate\Broadcasting\Broadcasters\NullBroadcaster;
@@ -402,26 +400,18 @@ class BroadcastManager implements FactoryContract
      */
     protected function createAblyDriver(array $config)
     {
-        $ably = $this->ably($config);
-
-        return match (true) {
-            $ably instanceof AblyRest => new AblyBroadcaster($ably),
-            default => new Ably2Broadcaster($ably),
-        };
+        return new AblyBroadcaster($this->ably($config));
     }
 
     /**
      * Get an Ably instance for the given configuration.
      *
      * @param  array  $config
-     * @return \Ably\PubSub\PubSubHttpClient|\Ably\AblyRest
+     * @return \Ably\AblyRest
      */
     public function ably(array $config)
     {
-        return match (true) {
-            class_exists(AblyServer::class) => AblyServer::createHttpClient($config),
-            default => new AblyRest($config),
-        };
+        return new AblyRest($config);
     }
 
     /**

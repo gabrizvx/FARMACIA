@@ -108,7 +108,6 @@ class PostgresGrammar extends Grammar
     public function compileViews($schema)
     {
         return 'select viewname as name, schemaname as schema, definition from pg_views where '
-            ."not exists (select 1 from pg_depend d where d.objid = format('%I.%I', schemaname, viewname)::regclass and d.deptype = 'e') and "
             .$this->compileSchemaWhereClause($schema, 'schemaname')
             .' order by schemaname, viewname';
     }
@@ -627,7 +626,7 @@ class PostgresGrammar extends Grammar
      */
     public function compileDropIndex(Blueprint $blueprint, Fluent $command)
     {
-        return "drop index {$this->wrapIndex($blueprint, $command->index)}";
+        return "drop index {$this->wrap($command->index)}";
     }
 
     /**
@@ -704,25 +703,9 @@ class PostgresGrammar extends Grammar
     public function compileRenameIndex(Blueprint $blueprint, Fluent $command)
     {
         return sprintf('alter index %s rename to %s',
-            $this->wrapIndex($blueprint, $command->from),
+            $this->wrap($command->from),
             $this->wrap($command->to)
         );
-    }
-
-    /**
-     * Wrap an index name, qualifying it with the schema of the blueprint's table.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  string  $index
-     * @return string
-     */
-    protected function wrapIndex(Blueprint $blueprint, $index)
-    {
-        [$schema] = $this->connection->getSchemaBuilder()->parseSchemaAndTable($blueprint->getTable());
-
-        return $schema && ! str_contains($index, '.')
-            ? $this->wrapValue($schema).'.'.$this->wrap($index)
-            : $this->wrap($index);
     }
 
     /**

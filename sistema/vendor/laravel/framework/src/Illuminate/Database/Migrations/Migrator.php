@@ -10,7 +10,6 @@ use Illuminate\Console\View\Components\TwoColumnDetail;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\ConnectionResolverInterface as Resolver;
 use Illuminate\Database\Events\MigrationEnded;
-use Illuminate\Database\Events\MigrationFailed;
 use Illuminate\Database\Events\MigrationsEnded;
 use Illuminate\Database\Events\MigrationSkipped;
 use Illuminate\Database\Events\MigrationsStarted;
@@ -22,7 +21,6 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use ReflectionClass;
 use Symfony\Component\Console\Output\OutputInterface;
-use Throwable;
 
 class Migrator
 {
@@ -448,16 +446,10 @@ class Migrator
             }
         };
 
-        try {
-            $this->getSchemaGrammar($connection)->supportsSchemaTransactions()
-                && $migration->withinTransaction
-                    ? $connection->transaction($callback)
-                    : $callback();
-        } catch (Throwable $e) {
-            $this->fireMigrationEvent(new MigrationFailed($migration, $method, $name, $e));
-
-            throw $e;
-        }
+        $this->getSchemaGrammar($connection)->supportsSchemaTransactions()
+            && $migration->withinTransaction
+                ? $connection->transaction($callback)
+                : $callback();
     }
 
     /**

@@ -1477,16 +1477,12 @@ class Str
      * @param  string|iterable<string>  $search
      * @param  string|iterable<string>  $subject
      * @param  bool  $caseSensitive
-     * @return ($subject is string ? string : string[])
+     * @return string
      */
     public static function remove($search, $subject, $caseSensitive = true)
     {
         if ($search instanceof Traversable) {
             $search = iterator_to_array($search);
-        }
-
-        if ($subject instanceof Traversable) {
-            $subject = iterator_to_array($subject);
         }
 
         return $caseSensitive
@@ -1891,7 +1887,11 @@ class Str
      */
     public static function substrCount($haystack, $needle, $offset = 0, $length = null)
     {
-        return substr_count(static::substr($haystack, $offset, $length), $needle);
+        if (! is_null($length)) {
+            return substr_count($haystack, $needle, $offset, $length);
+        }
+
+        return substr_count($haystack, $needle, $offset);
     }
 
     /**

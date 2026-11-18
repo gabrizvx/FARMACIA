@@ -117,13 +117,13 @@ class ScheduleRunCommand extends Command
 
         foreach ($events as $event) {
             if ($paused && ! $event->runsWhenPaused()) {
-                $this->dispatcher->dispatch(new ScheduledTaskSkipped($event, ScheduledTaskSkipReason::Paused));
+                $this->dispatcher->dispatch(new ScheduledTaskSkipped($event));
 
                 continue;
             }
 
             if (! $event->filtersPass($this->laravel)) {
-                $this->dispatcher->dispatch(new ScheduledTaskSkipped($event, ScheduledTaskSkipReason::ConditionNotMet));
+                $this->dispatcher->dispatch(new ScheduledTaskSkipped($event));
 
                 continue;
             }
@@ -165,8 +165,6 @@ class ScheduleRunCommand extends Command
         if ($this->schedule->serverShouldRun($event, $this->startedAt)) {
             $this->runEvent($event);
         } else {
-            $this->dispatcher->dispatch(new ScheduledTaskSkipped($event, ScheduledTaskSkipReason::RanOnAnotherServer));
-
             $this->components->info(sprintf(
                 'Skipping [%s] because the command already ran on another server.', $event->getSummaryForDisplay()
             ));
@@ -267,13 +265,13 @@ class ScheduleRunCommand extends Command
                 }
 
                 if ($paused && ! $event->runsWhenPaused()) {
-                    $this->dispatcher->dispatch(new ScheduledTaskSkipped($event, ScheduledTaskSkipReason::Paused));
+                    $this->dispatcher->dispatch(new ScheduledTaskSkipped($event));
 
                     continue;
                 }
 
                 if (! $event->filtersPass($this->laravel)) {
-                    $this->dispatcher->dispatch(new ScheduledTaskSkipped($event, ScheduledTaskSkipReason::ConditionNotMet));
+                    $this->dispatcher->dispatch(new ScheduledTaskSkipped($event));
 
                     continue;
                 }

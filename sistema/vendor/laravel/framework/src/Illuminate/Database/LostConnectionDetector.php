@@ -9,13 +9,6 @@ use Throwable;
 class LostConnectionDetector implements LostConnectionDetectorContract
 {
     /**
-     * The callback that should be used to detect additional lost connections.
-     *
-     * @var (callable(\Throwable): bool)|null
-     */
-    protected static $detectUsingCallback;
-
-    /**
      * Determine if the given exception was caused by a lost connection.
      *
      * @param  \Throwable  $e
@@ -23,10 +16,6 @@ class LostConnectionDetector implements LostConnectionDetectorContract
      */
     public function causedByLostConnection(Throwable $e): bool
     {
-        if (static::$detectUsingCallback && call_user_func(static::$detectUsingCallback, $e)) {
-            return true;
-        }
-
         $message = $e->getMessage();
 
         return Str::contains($message, [
@@ -105,7 +94,6 @@ class LostConnectionDetector implements LostConnectionDetectorContract
             'no healthy tablet available',
             'transaction pool connection limit exceeded',
             'SSL operation failed with code 5',
-            'vttablet: rpc error: code = Canceled desc = QueryList.TerminateAll()',
 
             // PlanetScale PostgreSQL / pg_bouncer related things...
             'no primary available for branch',
@@ -116,16 +104,5 @@ class LostConnectionDetector implements LostConnectionDetectorContract
             'failed to read startup message',
             'canceling statement due to conflict with recovery',
         ]);
-    }
-
-    /**
-     * Register a callback to detect additional lost connections.
-     *
-     * @param  (callable(\Throwable): bool)|null  $callback
-     * @return void
-     */
-    public static function detectUsing(?callable $callback)
-    {
-        static::$detectUsingCallback = $callback;
     }
 }

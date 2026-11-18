@@ -6,7 +6,6 @@
 
 @section('description','Nuevo Registro de Categorias')
 @section('section-breadcrumb','Categorias')
-@section('item-breadcrumb','Inicio')
 @section('module-breadcrumb','Configuraciones')
 
 @section('content')

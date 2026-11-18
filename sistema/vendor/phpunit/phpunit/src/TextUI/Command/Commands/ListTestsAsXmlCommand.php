@@ -58,15 +58,15 @@ final readonly class ListTestsAsXmlCommand implements Command
         $groups           = [];
 
         foreach ($this->tests as $test) {
-            foreach ($test->groups() as $group) {
-                if (!isset($groups[$group])) {
-                    $groups[$group] = [];
+            if ($test instanceof TestCase) {
+                foreach ($test->groups() as $group) {
+                    if (!isset($groups[$group])) {
+                        $groups[$group] = [];
+                    }
+
+                    $groups[$group][] = $test->valueObjectForEvents()->id();
                 }
 
-                $groups[$group][] = $test->valueObjectForEvents()->id();
-            }
-
-            if ($test instanceof TestCase) {
                 if ($test::class !== $currentTestClass) {
                     if ($currentTestClass !== null) {
                         $writer->endElement();

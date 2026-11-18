@@ -212,44 +212,14 @@ class Middleware
      * Specify a middleware that should be replaced with another middleware.
      *
      * @param  string  $search
-     * @param  array|string  $replace
+     * @param  string  $replace
      * @return $this
      */
-    public function replace(string $search, array|string $replace)
+    public function replace(string $search, string $replace)
     {
         $this->replacements[$search] = $replace;
 
         return $this;
-    }
-
-    /**
-     * Insert middleware before the given middleware in the global middleware stack.
-     *
-     * @param  string  $search
-     * @param  array|string  $middleware
-     * @return $this
-     */
-    public function insertBefore(string $search, array|string $middleware)
-    {
-        return $this->replace($search, array_merge(
-            Arr::wrap($middleware),
-            Arr::wrap($this->replacements[$search] ?? $search)
-        ));
-    }
-
-    /**
-     * Insert middleware after the given middleware in the global middleware stack.
-     *
-     * @param  string  $search
-     * @param  array|string  $middleware
-     * @return $this
-     */
-    public function insertAfter(string $search, array|string $middleware)
-    {
-        return $this->replace($search, array_merge(
-            Arr::wrap($this->replacements[$search] ?? $search),
-            Arr::wrap($middleware)
-        ));
     }
 
     /**
@@ -335,46 +305,14 @@ class Middleware
      *
      * @param  string  $group
      * @param  string  $search
-     * @param  array|string  $replace
+     * @param  string  $replace
      * @return $this
      */
-    public function replaceInGroup(string $group, string $search, array|string $replace)
+    public function replaceInGroup(string $group, string $search, string $replace)
     {
         $this->groupReplacements[$group][$search] = $replace;
 
         return $this;
-    }
-
-    /**
-     * Insert middleware before the given middleware in the specified group.
-     *
-     * @param  string  $group
-     * @param  string  $search
-     * @param  array|string  $middleware
-     * @return $this
-     */
-    public function insertBeforeInGroup(string $group, string $search, array|string $middleware)
-    {
-        return $this->replaceInGroup($group, $search, array_merge(
-            Arr::wrap($middleware),
-            Arr::wrap($this->groupReplacements[$group][$search] ?? $search)
-        ));
-    }
-
-    /**
-     * Insert middleware after the given middleware in the specified group.
-     *
-     * @param  string  $group
-     * @param  string  $search
-     * @param  array|string  $middleware
-     * @return $this
-     */
-    public function insertAfterInGroup(string $group, string $search, array|string $middleware)
-    {
-        return $this->replaceInGroup($group, $search, array_merge(
-            Arr::wrap($this->groupReplacements[$group][$search] ?? $search),
-            Arr::wrap($middleware)
-        ));
     }
 
     /**
@@ -524,9 +462,9 @@ class Middleware
             \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
         ]));
 
-        $middleware = Arr::flatten(array_map(function ($middleware) {
+        $middleware = array_map(function ($middleware) {
             return $this->replacements[$middleware] ?? $middleware;
-        }, $middleware));
+        }, $middleware);
 
         return array_values(array_filter(
             array_diff(
@@ -564,9 +502,11 @@ class Middleware
         $middleware = array_merge($middleware, $this->groups);
 
         foreach ($middleware as $group => $groupedMiddleware) {
-            $middleware[$group] = Arr::flatten(array_map(function ($groupMiddleware) use ($group) {
-                return $this->groupReplacements[$group][$groupMiddleware] ?? $groupMiddleware;
-            }, $groupedMiddleware));
+            foreach ($groupedMiddleware as $index => $groupMiddleware) {
+                if (isset($this->groupReplacements[$group][$groupMiddleware])) {
+                    $middleware[$group][$index] = $this->groupReplacements[$group][$groupMiddleware];
+                }
+            }
         }
 
         foreach ($this->groupRemovals as $group => $removals) {

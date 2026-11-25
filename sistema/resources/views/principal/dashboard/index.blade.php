@@ -1,14 +1,12 @@
 @extends('template.administrador')
 
-@section('title','DASHBOARD')
-@section('name-section','DASHBOARD')
-
-
-@section('description','Graficos y KPIs')
-@section('section-breadcrumb','Inicio')
-@section('item-breadcrumb','Dashboard')
-@section('module-breadcrumb','Principal')
+@section('title', 'Dashboard')
+@section('name_section', 'Dashboard')
+@section('description', 'Resumen de estadísticas')
+@section('item_section', 'Inicio')
+@section('section', 'Dashboard')
+@section('module', 'Principal')
 
 @section('content')
-<p>Contenido del dashboard</p>
+
 @endsection

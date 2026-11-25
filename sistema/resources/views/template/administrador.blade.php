@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="San Juan – Sistema de Venta de Medicamentos">
-  <title>FARM SJB | @yield('title')</title>
+  <title>FARMACIA UPSJB | @yield('title')</title>
   <link rel="stylesheet" href="{{ asset('css/bootstrap.css') }}">
   <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
 </head>
@@ -45,12 +45,7 @@
         </div>
 
 
-        <!-- 
-            CONTENIDO DE LA VISTA
-            Aquí va el contenido específico de cada página
-            (KPIs, gráficos, tablas, formularios, etc.)
-            En Laravel: 
-        -->
+
 
         @yield('content')
 
@@ -60,7 +55,7 @@
   </div>
 </div>
 
-<!-- MODAL — Confirmar Cierre de Sesión -->
+
  @include("partials.modal-logout")
  @include('partials.modal-profile')
 
@@ -69,7 +64,7 @@
 <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
 <script src="{{ asset('js/app.js') }}"></script>
 
-{{-- Scripts propios de cada vista (@push('scripts')) --}}
+
 @stack('scripts')
 
 

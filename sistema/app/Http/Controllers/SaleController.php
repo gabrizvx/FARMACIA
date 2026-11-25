@@ -7,7 +7,6 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Medicine;
 use App\Models\Sale;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -38,7 +37,6 @@ class SaleController extends Controller
     {
         return view(self::VISTA_CREAR, [
             'customers' => Customer::query()->orderBy('name')->get(),
-            'users' => User::query()->orderBy('name')->get(),
             'medicines' => Medicine::query()->where('stock', '>', 0)->orderBy('name')->get(),
         ]);
     }
@@ -56,7 +54,7 @@ class SaleController extends Controller
             $cabeceraVenta = new Sale();
             $cabeceraVenta->fill([
                 'customer_id' => $entrada['customer_id'],
-                'user_id' => $entrada['user_id'],
+                'user_id' => auth()->id(),
                 'date' => now(),
                 'total' => 0,
                 'igv' => 0,
@@ -123,7 +121,6 @@ class SaleController extends Controller
     {
         return $request->validate([
             'customer_id' => ['required', 'integer', 'exists:customers,id'],
-            'user_id' => ['required', 'integer', 'exists:users,id'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.medicine_id' => ['required', 'integer', 'distinct', 'exists:medicines,id'],
             'items.*.amount' => ['required', 'integer', 'min:1'],

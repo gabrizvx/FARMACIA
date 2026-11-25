@@ -49,6 +49,7 @@
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="{{ route('sales.show', $sale) }}">Ver detalle</a></li>
+                                @if (auth()->user()->hasRole('Administrador'))
                                 <li>
                                     <form action="{{ route('sales.destroy', $sale) }}" method="POST"
                                           onsubmit="return confirm('¿Seguro que desea anular esta venta? El stock será devuelto.')">
@@ -57,6 +58,7 @@
                                         <button type="submit" class="dropdown-item text-danger">Anular</button>
                                     </form>
                                 </li>
+                                @endif
                             </ul>
                         </div>
                     </td>

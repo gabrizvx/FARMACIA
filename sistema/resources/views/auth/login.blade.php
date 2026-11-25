@@ -1,76 +1,149 @@
-<!DOCTYPE html>
-<html lang="es">
+<!doctype html>
+<html lang="es" dir="ltr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión - Sistema Farmacia</title>
-    <link href="https://jsdelivr.net" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="San Juan – Sistema de Venta de Medicamentos">
+  <title>FARM SJB | Iniciar sesión</title>
+  <link rel="stylesheet" href="{{ asset('css/bootstrap.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
 </head>
-<body class="bg-light d-flex align-items-center justify-content-center vh-100">
 
-    <div class="card shadow-sm border-0" style="width: 100%; max-width: 400px;">
-        <div class="card-body p-4">
-            <h4 class="text-center fw-bold mb-1">Bienvenido</h4>
-            <p class="text-center text-muted small mb-4">Ingresa tus credenciales para continuar</p>
+<body>
 
-            {{-- Mensaje de éxito (ej. al cerrar sesión) --}}
-            @if (session('ok'))
-                <div class="alert alert-success py-2 small">
-                    {{ session('ok') }}
-                </div>
-            @endif
+<main class="login-wrapper d-flex">
 
-            {{-- Mensajes de error de validación o credenciales --}}
-            @if ($errors->any())
-                <div class="alert alert-danger py-2 small">
-                    <ul class="mb-0 ps-3">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
+  <!-- Panel de marca -->
+  <section class="login-brand bg-dark text-white d-none d-lg-flex flex-column justify-content-between p-5" aria-hidden="true">
 
-            <form action="{{ route('login.attempt') }}" method="POST">
-                @csrf
-
-                <div class="mb-3">
-                    <label for="email" class="form-label">Correo electrónico</label>
-                    <input
-                        type="email"
-                        name="email"
-                        id="email"
-                        class="form-control @error('email') is-invalid @enderror"
-                        value="{{ old('email') }}"
-                        placeholder="usuario@farmacia.com"
-                        required
-                        autofocus
-                    >
-                </div>
-
-                <div class="mb-3">
-                    <label for="password" class="form-label">Contraseña</label>
-                    <input
-                        type="password"
-                        name="password"
-                        id="password"
-                        class="form-control @error('password') is-invalid @enderror"
-                        placeholder="••••••••"
-                        required
-                    >
-                </div>
-
-                <div class="mb-3 form-check">
-                    <input type="checkbox" name="remember" id="remember" class="form-check-input">
-                    <label for="remember" class="form-check-label small">Mantener sesión iniciada</label>
-                </div>
-
-                <button type="submit" class="btn btn-primary w-100 fw-semibold">
-                    Ingresar
-                </button>
-            </form>
-        </div>
+    <div class="d-flex align-items-center">
+      <div class="brand-icon rounded-circle bg-primary d-flex align-items-center justify-content-center me-3 flex-shrink-0">
+        <i class="bi bi-plus-lg text-white fs-5 fw-bold"></i>
+      </div>
+      <div class="lh-sm">
+        <div class="text-white fw-bold fs-5 lh-1">San Juan</div>
+        <div class="sidebar-section-title text-white-50 fw-normal mt-1">Sistema de Venta de Medicamentos</div>
+      </div>
     </div>
 
+    <div class="login-brand-copy">
+      <h1 class="display-6 fw-bold mb-3">Gestiona tu farmacia de forma simple y segura.</h1>
+      <p class="text-white-50 mb-0">Ventas, inventario y clientes en un solo lugar.</p>
+    </div>
+
+    <ul class="list-unstyled d-flex flex-column gap-3 mb-0 small">
+      <li class="d-flex align-items-center gap-2 text-white-50">
+        <i class="bi bi-shield-check text-primary"></i> Acceso protegido por roles
+      </li>
+      <li class="d-flex align-items-center gap-2 text-white-50">
+        <i class="bi bi-graph-up-arrow text-primary"></i> Reportes en tiempo real
+      </li>
+      <li class="d-flex align-items-center gap-2 text-white-50">
+        <i class="bi bi-box-seam text-primary"></i> Control de stock y vencimientos
+      </li>
+    </ul>
+  </section>
+
+  <!-- Formulario -->
+  <section class="flex-grow-1 d-flex align-items-center justify-content-center p-4">
+    <div class="login-card w-100">
+
+      <div class="d-flex d-lg-none align-items-center justify-content-center mb-4">
+        <div class="brand-icon rounded-circle bg-primary d-flex align-items-center justify-content-center me-2">
+          <i class="bi bi-plus-lg text-white fs-5 fw-bold"></i>
+        </div>
+        <span class="fw-bold fs-5 text-dark">San Juan</span>
+      </div>
+
+      <div class="mb-4">
+        <h2 class="h3 fw-bold text-dark mb-1">Bienvenido</h2>
+        <p class="text-secondary small mb-0">Ingresa tus credenciales para continuar.</p>
+      </div>
+
+      @if (session('ok'))
+        <div class="alert alert-success small py-2" role="alert">
+          <i class="bi bi-check-circle me-1"></i> {{ session('ok') }}
+        </div>
+      @endif
+
+      @error('email')
+        <div id="loginAlert" class="alert alert-danger small py-2" role="alert">
+          <i class="bi bi-exclamation-circle me-1"></i> {{ $message }}
+        </div>
+      @enderror
+
+      <form action="{{ route('login') }}" method="POST" class="needs-validation" novalidate>
+        @csrf
+
+        <div class="mb-3">
+          <label for="loginUser" class="form-label small fw-semibold text-dark">Usuario o correo</label>
+          <div class="input-group has-validation login-input-group">
+            <span class="input-group-text bg-white"><i class="bi bi-person text-secondary"></i></span>
+            <input type="email" id="loginUser" name="email" value="{{ old('email') }}" class="form-control border-start-0 @error('email') is-invalid @enderror"
+                   placeholder="usuario@sanjuan.com" autocomplete="username" required autofocus>
+            <div class="invalid-feedback">Ingresa tu usuario o correo.</div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <label for="loginPassword" class="form-label small fw-semibold text-dark">Contraseña</label>
+            <a href="#" class="small text-primary text-decoration-none mb-2">¿Olvidaste tu contraseña?</a>
+          </div>
+          <div class="input-group has-validation login-input-group">
+            <span class="input-group-text bg-white"><i class="bi bi-lock text-secondary"></i></span>
+            <input type="password" id="loginPassword" name="password" class="form-control border-start-0 border-end-0"
+                   placeholder="••••••••" autocomplete="current-password" required>
+            <button type="button" id="togglePassword" class="input-group-text bg-white" aria-label="Mostrar contraseña">
+              <i class="bi bi-eye text-secondary"></i>
+            </button>
+            <div class="invalid-feedback">Ingresa tu contraseña.</div>
+          </div>
+        </div>
+
+        <div class="form-check mb-4">
+          <input class="form-check-input" type="checkbox" id="rememberMe" name="remember" value="1" {{ old('remember') ? 'checked' : '' }}>
+          <label class="form-check-label small text-secondary" for="rememberMe">Mantener sesión iniciada</label>
+        </div>
+
+        <button type="submit" id="loginSubmit" class="btn btn-primary w-100 py-2 fw-semibold rounded-3">
+          <span class="spinner-border spinner-border-sm me-2 d-none" aria-hidden="true"></span>
+          <span class="btn-label">Iniciar sesión</span>
+        </button>
+      </form>
+
+      <p class="text-center text-secondary small mt-5 mb-0">&copy; 2026 FARM SJB · Todos los derechos reservados</p>
+    </div>
+  </section>
+
+</main>
+
+<script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
+<script>
+  const password = document.getElementById('loginPassword');
+  const togglePassword = document.getElementById('togglePassword');
+
+  togglePassword?.addEventListener('click', () => {
+    const visible = password.type === 'text';
+    password.type = visible ? 'password' : 'text';
+    togglePassword.setAttribute('aria-label', visible ? 'Mostrar contraseña' : 'Ocultar contraseña');
+    togglePassword.querySelector('i').className = `bi ${visible ? 'bi-eye' : 'bi-eye-slash'} text-secondary`;
+  });
+
+  document.querySelector('form')?.addEventListener('submit', (event) => {
+    const form = event.currentTarget;
+
+    if (!form.checkValidity()) {
+      form.classList.add('was-validated');
+      event.preventDefault();
+      return;
+    }
+
+    const submit = document.getElementById('loginSubmit');
+    submit.disabled = true;
+    submit.querySelector('.spinner-border').classList.remove('d-none');
+    submit.querySelector('.btn-label').textContent = 'Ingresando...';
+  });
+</script>
 </body>
 </html>

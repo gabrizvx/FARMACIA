@@ -33,12 +33,11 @@ class AuthController extends Controller
             $request->session()->regenerate();
 
             return redirect()
-                ->intended(route('sales.index'))
-                ->with('ok', 'Bienvenido al sistema');
+                ->intended(route('dashboard.index'));
         }
 
         return back()
-            ->withErrors(['email' => 'Las credenciales ingresadas son incorrectas.'])
+            ->withErrors(['email' => 'El correo o la contraseña no son correctos.'])
             ->onlyInput('email');
     }
 
@@ -51,6 +50,6 @@ class AuthController extends Controller
 
         return redirect()
             ->route('login')
-            ->with('ok', 'Sesión cerrada correctamente');
+            ->with('ok', 'Cerraste sesión correctamente.');
     }
 }

@@ -50,6 +50,12 @@ class User extends Authenticatable
         return $this->hasMany(Sale::class, 'user_id', 'id');
     }
 
+    // Comprueba si el usuario tiene alguno de los roles indicados.
+    public function hasRole(string ...$roles): bool
+    {
+        return $this->role !== null && in_array($this->role->name, $roles, true);
+    }
+
     /**
      * Definición de conversiones de tipo para los atributos del modelo.
      *

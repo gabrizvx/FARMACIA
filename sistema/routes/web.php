@@ -1,9 +1,9 @@
 <?php
 
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MedicineController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SaleController;
@@ -12,13 +12,13 @@ use Illuminate\Support\Facades\Route;
 
 // Rutas públicas (solo invitados)
 Route::middleware('guest')->group(function (): void {
-    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
+    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [LoginController::class, 'login'])->name('login');
 });
 
 // Rutas protegidas (requieren iniciar sesión)
 Route::middleware('auth')->group(function (): void {
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     // Redirección inicial al dashboard
     Route::get('/', fn () => redirect()->route('dashboard.index'));

@@ -30,7 +30,7 @@ class UserSeeder extends Seeder
                 'phone' => $user['phone'],
                 'tuition' => $user['tuition'],
                 'email' => $user['email'],
-                'password' => 'password',
+                'password' => bcrypt('password'),
             ]);
         }
     }

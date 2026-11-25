@@ -1,69 +1,95 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Models\Role;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class RoleController extends Controller
 {
-    // Listado de roles
-    public function index()
-    {
-        $roles = Role::latest()->get();
+    private const VISTA_INDICE = 'settings.roles.index';
+    private const VISTA_CREAR = 'settings.roles.create';
+    private const VISTA_EDITAR = 'settings.roles.edit';
 
-        return view('settings.roles.index', compact('roles'));
-    }
-
-    // Formulario para crear
-    public function create()
+    public function index(): View
     {
-        return view('settings.roles.create');
-    }
+        $coleccionRoles = Role::query()
+            ->latest('id')
+            ->get();
 
-    // Guardar nuevo rol
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|max:50|unique:roles',
-            'description' => 'nullable|max:255',
+        return view(self::VISTA_INDICE, [
+            'roles' => $coleccionRoles,
         ]);
-
-        Role::create($validated);
-
-        return to_route('roles.index')->with('ok', 'Rol registrado');
     }
 
-    // Formulario para editar
-    public function edit(Role $role)
+    public function create(): View
     {
-        return view('settings.roles.edit', compact('role'));
+        return view(self::VISTA_CREAR);
     }
 
-    // Actualizar rol
-    public function update(Request $request, Role $role)
+    public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            // ignore(): el nombre no se repite, sin contar el rol que se está editando
-            'name' => ['required', 'max:50', Rule::unique('roles')->ignore($role->id)],
-            'description' => 'nullable|max:255',
+        $atributos = $this->obtenerDatosValidados($request);
+
+        $nuevoRol = new Role();
+        $nuevoRol->fill($atributos)->save();
+
+        return redirect()
+            ->route('roles.index')
+            ->with('ok', 'Rol registrado');
+    }
+
+    public function edit(Role $role): View
+    {
+        return view(self::VISTA_EDITAR, [
+            'role' => $role,
         ]);
-
-        $role->update($validated);
-
-        return to_route('roles.index')->with('ok', 'Rol actualizado');
     }
 
-    // Eliminar rol (solo si no tiene usuarios)
-    public function destroy(Role $role)
+    public function update(Request $request, Role $role): RedirectResponse
     {
-        if ($role->users()->exists()) {
-            return to_route('roles.index')->with('error', 'No se puede eliminar el rol porque tiene usuarios asignados');
+        $atributos = $this->obtenerDatosValidados($request, $role->id);
+
+        $role->fill($atributos)->save();
+
+        return redirect()
+            ->route('roles.index')
+            ->with('ok', 'Rol actualizado');
+    }
+
+    public function destroy(Role $role): RedirectResponse
+    {
+        $role->loadCount('users');
+
+        if ($role->users_count > 0) {
+            return redirect()
+                ->route('roles.index')
+                ->with('error', 'No se puede eliminar el rol porque tiene usuarios asignados');
         }
 
         $role->delete();
 
-        return to_route('roles.index')->with('ok', 'Rol eliminado');
+        return redirect()
+            ->route('roles.index')
+            ->with('ok', 'Rol eliminado');
+    }
+
+    private function obtenerDatosValidados(Request $request, ?int $rolId = null): array
+    {
+        $reglaNombreUnico = Rule::unique('roles', 'name');
+
+        if ($rolId !== null) {
+            $reglaNombreUnico->ignore($rolId);
+        }
+
+        return $request->validate([
+            'name' => ['required', 'string', 'max:50', $reglaNombreUnico],
+            'description' => ['nullable', 'string', 'max:255'],
+        ]);
     }
 }

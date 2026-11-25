@@ -4,41 +4,69 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar Sesión - Sistema Farmacia</title>
-    <link href="{{ asset('css/bootstrap.css') }}" rel="stylesheet">
-    <link rel="stylesheet" href="https://jsdelivr.net">
+    <link href="https://jsdelivr.net" rel="stylesheet">
 </head>
 <body class="bg-light d-flex align-items-center justify-content-center vh-100">
 
-    <div class="card border-0 shadow-sm" style="width: 100%; max-width: 400px;">
+    <div class="card shadow-sm border-0" style="width: 100%; max-width: 400px;">
         <div class="card-body p-4">
-            <div class="text-center mb-4">
-                <div class="rounded-circle bg-danger-subtle d-inline-flex align-items-center justify-content-center mb-2" style="width: 56px; height: 56px;">
-                    <i class="bi bi-capsule text-danger fs-3"></i>
-                </div>
-                <h4 class="fw-bold mb-1">Bienvenido</h4>
-                <p class="text-secondary small mb-0">Ingresa tus credenciales para continuar</p>
-            </div>
+            <h4 class="text-center fw-bold mb-1">Bienvenido</h4>
+            <p class="text-center text-muted small mb-4">Ingresa tus credenciales para continuar</p>
 
-            @if ($errors->any())
-                <div class="alert alert-danger py-2 small">
-                    {{ $errors->first() }}
+            {{-- Mensaje de éxito (ej. al cerrar sesión) --}}
+            @if (session('ok'))
+                <div class="alert alert-success py-2 small">
+                    {{ session('ok') }}
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('login.post') }}">
+            {{-- Mensajes de error de validación o credenciales --}}
+            @if ($errors->any())
+                <div class="alert alert-danger py-2 small">
+                    <ul class="mb-0 ps-3">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <form action="{{ route('login.attempt') }}" method="POST">
                 @csrf
+
                 <div class="mb-3">
-                    <label for="email" class="form-label small fw-semibold">Correo electrónico</label>
-                    <input type="email" class="form-control" id="email" name="email" value="{{ old('email') }}" required autofocus placeholder="ejemplo@farmacia.com">
+                    <label for="email" class="form-label">Correo electrónico</label>
+                    <input
+                        type="email"
+                        name="email"
+                        id="email"
+                        class="form-control @error('email') is-invalid @enderror"
+                        value="{{ old('email') }}"
+                        placeholder="usuario@farmacia.com"
+                        required
+                        autofocus
+                    >
                 </div>
 
-                <div class="mb-4">
-                    <label for="password" class="form-label small fw-semibold">Contraseña</label>
-                    <input type="password" class="form-control" id="password" name="password" required placeholder="••••••••">
+                <div class="mb-3">
+                    <label for="password" class="form-label">Contraseña</label>
+                    <input
+                        type="password"
+                        name="password"
+                        id="password"
+                        class="form-control @error('password') is-invalid @enderror"
+                        placeholder="••••••••"
+                        required
+                    >
                 </div>
 
-                <button type="submit" class="btn btn-danger w-100 fw-semibold">
-                    <i class="bi bi-box-arrow-in-right me-1"></i> Ingresar
+                <div class="mb-3 form-check">
+                    <input type="checkbox" name="remember" id="remember" class="form-check-input">
+                    <label for="remember" class="form-check-label small">Mantener sesión iniciada</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                    Ingresar
                 </button>
             </form>
         </div>

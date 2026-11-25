@@ -1,7 +1,5 @@
-{{-- Hereda la plantilla padre: menú, encabezado y estilos --}}
 @extends('template.administrador')
 
-{{-- Rellena los huecos (@yield) de la plantilla --}}
 @section('title', 'Ventas')
 @section('name_section', 'Ventas')
 @section('description', 'Listado de ventas registradas')
@@ -22,7 +20,6 @@
         </div>
     </div>
     <div class="card-body">
-        {{-- Mensajes flash: ok (verde) y error (rojo) --}}
         @include('partials.alerts')
 
         <h6 class="text-uppercase small text-muted mb-3">Total de registros encontrados: {{ $sales->count() }}</h6>
@@ -38,10 +35,9 @@
                 </tr>
             </thead>
             <tbody>
-                {{-- @forelse recorre la colección; si está vacía muestra el bloque @empty --}}
                 @forelse ($sales as $sale)
                 <tr>
-                    <td class="text-center align-middle">{{ $loop->iteration }} {{-- 1, 2, 3... --}}</td>
+                    <td class="text-center align-middle">{{ $loop->iteration }}</td>
                     <td class="text-center align-middle">{{ $sale->date->format('d/m/Y H:i') }}</td>
                     <td class="text-start align-middle">{{ $sale->customer->name }}</td>
                     <td class="text-start align-middle">{{ $sale->user->name }}</td>
@@ -55,9 +51,9 @@
                                 <li><a class="dropdown-item" href="{{ route('sales.show', $sale) }}">Ver detalle</a></li>
                                 <li>
                                     <form action="{{ route('sales.destroy', $sale) }}" method="POST"
-                                        onsubmit="return confirm('¿Seguro que desea anular esta venta? El stock será devuelto.')">
+                                          onsubmit="return confirm('¿Seguro que desea anular esta venta? El stock será devuelto.')">
                                         @csrf
-                                        @method('DELETE') {{-- verbo real: destroy() --}}
+                                        @method('DELETE')
                                         <button type="submit" class="dropdown-item text-danger">Anular</button>
                                     </form>
                                 </li>

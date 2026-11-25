@@ -1,7 +1,5 @@
-{{-- Hereda la plantilla padre: menú, encabezado y estilos --}}
 @extends('template.administrador')
 
-{{-- Rellena los huecos (@yield) de la plantilla --}}
 @section('title', 'Ventas')
 @section('name_section', 'Ventas')
 @section('description', 'Detalle de la venta')
@@ -18,7 +16,6 @@
         <div class="row mb-3">
             <div class="col-12 col-md-4 mb-2">
                 <small class="text-muted d-block">Venta Nº</small>
-                {{-- str_pad: 7 se muestra como 000007 --}}
                 <span class="fw-semibold">{{ str_pad($sale->id, 6, '0', STR_PAD_LEFT) }}</span>
             </div>
             <div class="col-12 col-md-4 mb-2">

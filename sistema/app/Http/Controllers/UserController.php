@@ -1,88 +1,121 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    // Listado de usuarios (con su rol cargado)
-    public function index()
+    private const VISTA_INDICE = 'settings.users.index';
+    private const VISTA_CREAR = 'settings.users.create';
+    private const VISTA_EDITAR = 'settings.users.edit';
+
+    public function index(): View
     {
-        $users = User::with('role')->latest()->get();
+        $coleccionUsuarios = User::query()
+            ->with('role')
+            ->latest('id')
+            ->get();
 
-        return view('settings.users.index', compact('users'));
-    }
-
-    // Formulario para crear
-    public function create()
-    {
-        $roles = Role::orderBy('name')->get();
-
-        return view('settings.users.create', compact('roles'));
-    }
-
-    // Guardar nuevo usuario
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'role_id' => 'required|exists:roles,id',
-            'name' => 'required|max:255',
-            'dni' => 'required|digits:8|unique:users',
-            'phone' => 'nullable|max:15',
-            'tuition' => 'nullable|max:20',
-            'email' => 'required|email|max:255|unique:users',
-            'password' => 'required|min:8|confirmed', // confirmed: debe coincidir con password_confirmation
+        return view(self::VISTA_INDICE, [
+            'users' => $coleccionUsuarios,
         ]);
-
-        User::create($validated); // el cast 'hashed' del modelo encripta la contraseña al guardar
-
-        return to_route('users.index')->with('ok', 'Usuario registrado');
     }
 
-    // Formulario para editar
-    public function edit(User $user)
+    public function create(): View
     {
-        $roles = Role::orderBy('name')->get();
-
-        return view('settings.users.edit', compact('user', 'roles'));
-    }
-
-    // Actualizar usuario
-    public function update(Request $request, User $user)
-    {
-        $validated = $request->validate([
-            'role_id' => 'required|exists:roles,id',
-            'name' => 'required|max:255',
-            'dni' => ['required', 'digits:8', Rule::unique('users')->ignore($user->id)],
-            'phone' => 'nullable|max:15',
-            'tuition' => 'nullable|max:20',
-            'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'password' => 'nullable|min:8|confirmed',
+        return view(self::VISTA_CREAR, [
+            'roles' => $this->listarRoles(),
         ]);
+    }
 
-        // Si no escribió contraseña nueva, se mantiene la actual
-        if (empty($validated['password'])) {
-            unset($validated['password']);
+    public function store(Request $request): RedirectResponse
+    {
+        $atributos = $this->obtenerDatosValidados($request);
+
+        $nuevoUsuario = new User();
+        $nuevoUsuario->fill($atributos)->save();
+
+        return redirect()
+            ->route('users.index')
+            ->with('ok', 'Usuario registrado');
+    }
+
+    public function edit(User $user): View
+    {
+        return view(self::VISTA_EDITAR, [
+            'user' => $user,
+            'roles' => $this->listarRoles(),
+        ]);
+    }
+
+    public function update(Request $request, User $user): RedirectResponse
+    {
+        $atributos = $this->obtenerDatosValidados($request, $user->id);
+
+        if (!$request->filled('password')) {
+            unset($atributos['password']);
         }
 
-        $user->update($validated);
+        $user->fill($atributos)->save();
 
-        return to_route('users.index')->with('ok', 'Usuario actualizado');
+        return redirect()
+            ->route('users.index')
+            ->with('ok', 'Usuario actualizado');
     }
 
-    // Eliminar usuario (solo si no tiene ventas)
-    public function destroy(User $user)
+    public function destroy(User $user): RedirectResponse
     {
-        if ($user->sales()->exists()) {
-            return to_route('users.index')->with('error', 'No se puede eliminar el usuario porque tiene ventas registradas');
+        $user->loadCount('sales');
+
+        if ($user->sales_count > 0) {
+            return redirect()
+                ->route('users.index')
+                ->with('error', 'No se puede eliminar el usuario porque tiene ventas registradas');
         }
 
         $user->delete();
 
-        return to_route('users.index')->with('ok', 'Usuario eliminado');
+        return redirect()
+            ->route('users.index')
+            ->with('ok', 'Usuario eliminado');
+    }
+
+    private function obtenerDatosValidados(Request $request, ?int $usuarioId = null): array
+    {
+        $reglaDni = Rule::unique('users', 'dni');
+        $reglaEmail = Rule::unique('users', 'email');
+        $reglaClave = ['required', 'string', 'min:8', 'confirmed'];
+
+        if ($usuarioId !== null) {
+            $reglaDni->ignore($usuarioId);
+            $reglaEmail->ignore($usuarioId);
+            $reglaClave[0] = 'nullable';
+        }
+
+        return $request->validate([
+            'role_id' => ['required', 'integer', 'exists:roles,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'dni' => ['required', 'digits:8', $reglaDni],
+            'phone' => ['nullable', 'string', 'max:15'],
+            'tuition' => ['nullable', 'string', 'max:20'],
+            'email' => ['required', 'email', 'max:255', $reglaEmail],
+            'password' => $reglaClave,
+        ]);
+    }
+
+    private function listarRoles(): Collection
+    {
+        return Role::query()
+            ->orderBy('name')
+            ->get();
     }
 }

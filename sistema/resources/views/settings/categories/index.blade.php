@@ -1,13 +1,11 @@
-{{-- Hereda la plantilla padre: menú, encabezado y estilos --}}
 @extends('template.administrador')
 
-{{-- Rellena los huecos (@yield) de la plantilla --}}
-@section('title', 'Categorias')
-@section('name_section', 'Categorias')
-@section('description', 'Listado de registros de categorias')
+@section('title', 'Categorías')
+@section('name_section', 'Categorías')
+@section('description', 'Listado de registros de categorías')
 @section('item_section', 'Inicio')
 @section('route_section', route('categories.index'))
-@section('section', 'Categorias')
+@section('section', 'Categorías')
 @section('module', 'Configuraciones')
 
 @section('content')
@@ -22,7 +20,6 @@
         </div>
     </div>
     <div class="card-body">
-        {{-- Mensajes flash: ok (verde) y error (rojo) --}}
         @include('partials.alerts')
 
         <h6 class="text-uppercase small text-muted mb-3">Total de registros encontrados: {{ $categories->count() }}</h6>
@@ -36,10 +33,9 @@
                 </tr>
             </thead>
             <tbody>
-                {{-- @forelse recorre la colección; si está vacía muestra el bloque @empty --}}
                 @forelse ($categories as $category)
                 <tr>
-                    <td class="text-center align-middle">{{ $loop->iteration }} {{-- 1, 2, 3... --}}</td>
+                    <td class="text-center align-middle">{{ $loop->iteration }}</td>
                     <td class="text-start align-middle">{{ $category->name }}</td>
                     <td class="text-start align-middle">{{ $category->description ?? '—' }}</td>
                     <td class="text-center align-middle">
@@ -51,9 +47,9 @@
                                 <li><a class="dropdown-item" href="{{ route('categories.edit', $category) }}">Editar</a></li>
                                 <li>
                                     <form action="{{ route('categories.destroy', $category) }}" method="POST"
-                                        onsubmit="return confirm('¿Seguro que desea eliminar esta categoría?')">
+                                          onsubmit="return confirm('¿Seguro que desea eliminar esta categoría?')">
                                         @csrf
-                                        @method('DELETE') {{-- verbo real: destroy() --}}
+                                        @method('DELETE')
                                         <button type="submit" class="dropdown-item text-danger">Eliminar</button>
                                     </form>
                                 </li>

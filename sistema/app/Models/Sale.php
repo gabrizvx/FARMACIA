@@ -17,19 +17,16 @@ class Sale extends Model
         ];
     }
 
-    // La venta la registra un usuario (vendedor)
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    // La venta pertenece a un cliente
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
     }
 
-    // La venta tiene muchos detalles (productos vendidos)
     public function details(): HasMany
     {
         return $this->hasMany(DetailSale::class);

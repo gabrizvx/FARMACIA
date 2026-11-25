@@ -1,118 +1,150 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Medicine;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\View\View;
 
 class MedicineController extends Controller
 {
-    // Unidades a partir de las cuales el stock se considera bajo
-    const LOW_STOCK = 10;
+    public const LIMITE_STOCK_BAJO = 10;
 
-    // Listado de medicamentos con búsqueda y filtros
-    public function index(Request $request)
+    private const DISCO_ALMACENAMIENTO = 'public';
+    private const CARPETA_IMAGENES = 'medicines';
+
+    public function index(Request $request): View
     {
-        $medicines = Medicine::with('category')                          // carga la categoría en 1 sola consulta (evita N+1)
-            ->when($request->search, function ($query, $search) {        // solo si escribió algo en el buscador
-                $query->where('name', 'like', "%{$search}%");
-            })
-            ->when($request->category_id, function ($query, $categoryId) { // solo si eligió una categoría
-                $query->where('category_id', $categoryId);
-            })
-            ->when($request->boolean('low_stock'), function ($query) {    // solo si marcó "stock bajo"
-                $query->where('stock', '<=', self::LOW_STOCK);
-            })
+        $filtros = [
+            'search' => $request->string('search')->trim()->value(),
+            'category_id' => $request->input('category_id'),
+            'low_stock' => $request->boolean('low_stock'),
+        ];
+
+        $listaMedicamentos = Medicine::query()
+            ->with('category')
+            ->when(
+                $filtros['search'] !== '',
+                fn ($q) => $q->where('name', 'like', "%{$filtros['search']}%")
+            )
+            ->when(
+                !empty($filtros['category_id']),
+                fn ($q) => $q->where('category_id', $filtros['category_id'])
+            )
+            ->when(
+                $filtros['low_stock'],
+                fn ($q) => $q->where('stock', '<=', self::LIMITE_STOCK_BAJO)
+            )
             ->orderBy('name')
             ->get();
 
-        // Para llenar el <select> del filtro
-        $categories = Category::orderBy('name')->get();
-        $lowStock = self::LOW_STOCK;
-
-        return view('management.medicines.index', compact('medicines', 'categories', 'lowStock'));
-    }
-
-    // Formulario para crear
-    public function create()
-    {
-        $categories = Category::orderBy('name')->get();
-
-        return view('management.medicines.create', compact('categories'));
-    }
-
-    // Guardar nuevo medicamento
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'name' => 'required|max:120',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048', // máx. 2 MB
+        return view('management.medicines.index', [
+            'medicines' => $listaMedicamentos,
+            'categories' => $this->listarCategorias(),
+            'lowStock' => self::LIMITE_STOCK_BAJO,
         ]);
+    }
 
-        // Si subió una imagen, se guarda en storage/app/public/medicines
+    public function create(): View
+    {
+        return view('management.medicines.create', [
+            'categories' => $this->listarCategorias(),
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $datosValidados = $this->validarFormulario($request);
+
         if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('medicines', 'public');
+            $datosValidados['image'] = $this->subirArchivo($request);
         }
 
-        Medicine::create($validated);
+        Medicine::query()->create($datosValidados);
 
-        return to_route('medicines.index')->with('ok', 'Medicamento registrado');
+        return redirect()
+            ->route('medicines.index')
+            ->with('ok', 'Medicamento registrado');
     }
 
-    // Formulario para editar
-    public function edit(Medicine $medicine)
+    public function edit(Medicine $medicine): View
     {
-        $categories = Category::orderBy('name')->get();
-
-        return view('management.medicines.edit', compact('medicine', 'categories'));
-    }
-
-    // Actualizar medicamento
-    public function update(Request $request, Medicine $medicine)
-    {
-        $validated = $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'name' => 'required|max:120',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+        return view('management.medicines.edit', [
+            'medicine' => $medicine,
+            'categories' => $this->listarCategorias(),
         ]);
+    }
+
+    public function update(Request $request, Medicine $medicine): RedirectResponse
+    {
+        $datosValidados = $this->validarFormulario($request);
 
         if ($request->hasFile('image')) {
-            // Borra la imagen anterior y guarda la nueva
-            if ($medicine->image) {
-                Storage::disk('public')->delete($medicine->image);
-            }
-            $validated['image'] = $request->file('image')->store('medicines', 'public');
+            $this->borrarArchivo($medicine->image);
+            $datosValidados['image'] = $this->subirArchivo($request);
         } else {
-            // Si no subió imagen nueva, se mantiene la actual
-            unset($validated['image']);
+            unset($datosValidados['image']);
         }
 
-        $medicine->update($validated);
+        $medicine->fill($datosValidados)->save();
 
-        return to_route('medicines.index')->with('ok', 'Medicamento actualizado');
+        return redirect()
+            ->route('medicines.index')
+            ->with('ok', 'Medicamento actualizado');
     }
 
-    // Eliminar medicamento (solo si no se ha vendido)
-    public function destroy(Medicine $medicine)
+    public function destroy(Medicine $medicine): RedirectResponse
     {
         if ($medicine->detailSales()->exists()) {
-            return to_route('medicines.index')->with('error', 'No se puede eliminar el medicamento porque tiene ventas registradas');
+            return redirect()
+                ->route('medicines.index')
+                ->with('error', 'No se puede eliminar el medicamento porque tiene ventas registradas');
         }
 
-        // Borra también su imagen
-        if ($medicine->image) {
-            Storage::disk('public')->delete($medicine->image);
-        }
-
+        $this->borrarArchivo($medicine->image);
         $medicine->delete();
 
-        return to_route('medicines.index')->with('ok', 'Medicamento eliminado');
+        return redirect()
+            ->route('medicines.index')
+            ->with('ok', 'Medicamento eliminado');
+    }
+
+    private function validarFormulario(Request $request): array
+    {
+        return $request->validate([
+            'category_id' => ['required', 'integer', 'exists:categories,id'],
+            'name' => ['required', 'string', 'max:120'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'stock' => ['required', 'integer', 'min:0'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
+    }
+
+    private function listarCategorias(): Collection
+    {
+        return Category::query()
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function subirArchivo(Request $request): string
+    {
+        return $request->file('image')->store(
+            self::CARPETA_IMAGENES,
+            self::DISCO_ALMACENAMIENTO
+        );
+    }
+
+    private function borrarArchivo(?string $rutaArchivo): void
+    {
+        if (!empty($rutaArchivo)) {
+            Storage::disk(self::DISCO_ALMACENAMIENTO)->delete($rutaArchivo);
+        }
     }
 }

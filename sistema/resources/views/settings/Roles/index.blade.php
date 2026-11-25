@@ -1,7 +1,5 @@
-{{-- Hereda la plantilla padre: menú, encabezado y estilos --}}
 @extends('template.administrador')
 
-{{-- Rellena los huecos (@yield) de la plantilla --}}
 @section('title', 'Roles')
 @section('name_section', 'Roles')
 @section('description', 'Listado de registros de roles')
@@ -36,10 +34,9 @@
                 </tr>
             </thead>
             <tbody>
-                {{-- @forelse recorre la colección; si está vacía muestra el bloque @empty --}}
                 @forelse ($roles as $role)
                 <tr>
-                    <td class="text-center align-middle">{{ $loop->iteration }} {{-- 1, 2, 3... --}}</td>
+                    <td class="text-center align-middle">{{ $loop->iteration }}</td>
                     <td class="text-start align-middle">{{ $role->name }}</td>
                     <td class="text-start align-middle">{{ $role->description ?? '—' }}</td>
                     <td class="text-center align-middle">
@@ -51,9 +48,9 @@
                                 <li><a class="dropdown-item" href="{{ route('roles.edit', $role) }}">Editar</a></li>
                                 <li>
                                     <form action="{{ route('roles.destroy', $role) }}" method="POST"
-                                        onsubmit="return confirm('¿Seguro que desea eliminar este rol?')">
+                                          onsubmit="return confirm('¿Seguro que desea eliminar este rol?')">
                                         @csrf
-                                        @method('DELETE') {{-- verbo real: destroy() --}}
+                                        @method('DELETE')
                                         <button type="submit" class="dropdown-item text-danger">Eliminar</button>
                                     </form>
                                 </li>

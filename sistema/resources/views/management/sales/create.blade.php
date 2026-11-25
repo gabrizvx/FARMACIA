@@ -1,7 +1,5 @@
-{{-- Hereda la plantilla padre: menú, encabezado y estilos --}}
 @extends('template.administrador')
 
-{{-- Rellena los huecos (@yield) de la plantilla --}}
 @section('title', 'Ventas')
 @section('name_section', 'Ventas')
 @section('description', 'Registrar nueva venta')
@@ -10,12 +8,11 @@
 @section('section', 'Ventas')
 @section('module', 'Gestión')
 
-{{-- Ventas: no hay edit; se registra, se consulta y, si hace falta, se anula --}}
 @section('content')
 <div class="card bg-white border-0 shadow-sm border-5 border-top border-secondary">
     <div class="card-body">
         <form action="{{ route('sales.store') }}" method="POST">
-            @csrf {{-- token de seguridad; sin él aparece el error 419 --}}
+            @csrf
 
             {{-- Datos generales --}}
             <div class="row">
@@ -109,8 +106,7 @@
 <script>
     const tbody = document.getElementById('items');
     const template = document.getElementById('item-template').innerHTML;
-    // Siguiente índice libre: uno más que el mayor índice enviado (si se quitó una fila, no se repite)
-    let index = {{ old('items') ? max(array_keys(old('items'))) + 1 : 0 }};
+    let index = {{ count(old('items', [])) }};
 
     // Recalcula subtotales y total
     function recalculate() {
@@ -125,6 +121,7 @@
             row.querySelector('.subtotal').textContent = 'S/ ' + subtotal.toFixed(2);
             total += subtotal;
         });
+
         document.getElementById('total').textContent = 'S/ ' + total.toFixed(2);
     }
 

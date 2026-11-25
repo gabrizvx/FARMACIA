@@ -25,13 +25,12 @@ class CategoryController extends Controller
     // Guardar nueva categoría
     public function store(Request $request)
     {
-        // validate() devuelve solo los campos validados; si algo falla, regresa al formulario con los errores
         $validated = $request->validate([
             'name' => 'required|max:50|unique:categories',
             'description' => 'nullable|max:255',
         ]);
 
-        Category::create($validated); // INSERT (solo los campos de #[Fillable])
+        Category::create($validated);
 
         // Patrón PRG: se redirige al listado con un mensaje flash
         return to_route('categories.index')->with('ok', 'Categoría registrada');
@@ -59,7 +58,7 @@ class CategoryController extends Controller
     // Eliminar categoría (solo si no tiene medicamentos)
     public function destroy(Category $category)
     {
-        // Regla del diagrama: la FK es restrictOnDelete(); se avisa antes de que MySQL lance el error 1451
+        // La FK es restrictOnDelete(): se avisa antes de que MySQL lance el error 1451
         if ($category->medicines()->exists()) {
             return to_route('categories.index')
                 ->with('error', 'No se puede eliminar la categoría porque tiene medicamentos asociados');

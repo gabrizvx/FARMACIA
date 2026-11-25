@@ -1,44 +1,56 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
 class AuthController extends Controller
 {
-    public function showLogin()
+    public function showLogin(): View
     {
         return view('auth.login');
     }
 
-    public function login(Request $request)
+    public function login(Request $request): RedirectResponse
     {
-        $credentials = $request->validate([
+        $credenciales = $request->validate([
             'email' => ['required', 'email'],
-            'password' => ['required'],
+            'password' => ['required', 'string'],
+        ], [
+            'email.required' => 'Ingresa tu correo electrónico.',
+            'email.email' => 'El formato del correo no es válido.',
+            'password.required' => 'Ingresa tu contraseña.',
         ]);
 
-        if (Auth::attempt($credentials)) {
+        $recordar = $request->boolean('remember');
+
+        if (Auth::attempt($credenciales, $recordar)) {
             $request->session()->regenerate();
 
-            if (auth()->user()->role->name === 'farmaceutico') {
-                return redirect()->route('medicines.index');
-            }
-
-            return redirect()->intended(route('dashboard.index'));
+            return redirect()
+                ->intended(route('sales.index'))
+                ->with('ok', 'Bienvenido al sistema');
         }
 
-        return back()->withErrors([
-            'email' => 'El correo o la contraseña son incorrectos.',
-        ])->onlyInput('email');
+        return back()
+            ->withErrors(['email' => 'Las credenciales ingresadas son incorrectas.'])
+            ->onlyInput('email');
     }
 
-    public function logout(Request $request)
+    public function logout(Request $request): RedirectResponse
     {
         Auth::logout();
+
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect()->route('login');
+
+        return redirect()
+            ->route('login')
+            ->with('ok', 'Sesión cerrada correctamente');
     }
 }

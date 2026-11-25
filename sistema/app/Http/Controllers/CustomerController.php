@@ -1,73 +1,90 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class CustomerController extends Controller
 {
-    // Listado de clientes
-    public function index()
+    public function index(): View
     {
-        $customers = Customer::latest()->get();
+        $listaClientes = Customer::query()
+            ->orderByDesc('created_at')
+            ->get();
 
-        return view('management.customers.index', compact('customers'));
+        return view('management.customers.index', [
+            'customers' => $listaClientes,
+        ]);
     }
 
-    // Formulario para crear
-    public function create()
+    public function create(): View
     {
         return view('management.customers.create');
     }
 
-    // Guardar nuevo cliente
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|max:50',
-            'dni' => 'required|digits:8|unique:customers',
-            'phone' => 'nullable|digits:9',
-            'age' => 'nullable|integer|min:0|max:120',
+        $datos = $this->validarCliente($request);
+
+        Customer::create($datos);
+
+        return redirect()
+            ->route('customers.index')
+            ->with('ok', 'Cliente registrado');
+    }
+
+    public function edit(Customer $customer): View
+    {
+        return view('management.customers.edit', [
+            'customer' => $customer,
         ]);
-
-        Customer::create($validated);
-
-        return to_route('customers.index')->with('ok', 'Cliente registrado');
     }
 
-    // Formulario para editar
-    public function edit(Customer $customer)
+    public function update(Request $request, Customer $customer): RedirectResponse
     {
-        return view('management.customers.edit', compact('customer'));
+        $datos = $this->validarCliente($request, $customer);
+
+        $customer->update($datos);
+
+        return redirect()
+            ->route('customers.index')
+            ->with('ok', 'Cliente actualizado');
     }
 
-    // Actualizar cliente
-    public function update(Request $request, Customer $customer)
+    public function destroy(Customer $customer): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|max:50',
-            // ignore(): el DNI no se repite, sin contar el cliente que se está editando
-            'dni' => ['required', 'digits:8', Rule::unique('customers')->ignore($customer->id)],
-            'phone' => 'nullable|digits:9',
-            'age' => 'nullable|integer|min:0|max:120',
-        ]);
-
-        $customer->update($validated);
-
-        return to_route('customers.index')->with('ok', 'Cliente actualizado');
-    }
-
-    // Eliminar cliente (solo si no tiene ventas)
-    public function destroy(Customer $customer)
-    {
-        if ($customer->sales()->exists()) {
-            return to_route('customers.index')->with('error', 'No se puede eliminar el cliente porque tiene ventas registradas');
+        if ($customer->sales()->count() > 0) {
+            return redirect()
+                ->route('customers.index')
+                ->with('error', 'No se puede eliminar el cliente porque tiene ventas registradas');
         }
 
         $customer->delete();
 
-        return to_route('customers.index')->with('ok', 'Cliente eliminado');
+        return redirect()
+            ->route('customers.index')
+            ->with('ok', 'Cliente eliminado');
+    }
+
+    private function validarCliente(Request $request, ?Customer $cliente = null): array
+    {
+        return $request->validate([
+            'name' => ['required', 'string', 'max:150'],
+            'dni' => [
+                'required',
+                'digits:8',
+                $cliente !== null
+                    ? Rule::unique('customers', 'dni')->ignore($cliente->id)
+                    : 'unique:customers,dni',
+            ],
+            'phone' => ['required', 'digits:9'],
+            'age' => ['required', 'integer', 'min:0', 'max:120'],
+        ]);
     }
 }

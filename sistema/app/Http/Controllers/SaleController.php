@@ -1,122 +1,165 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Medicine;
 use App\Models\Sale;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+use Throwable;
 
 class SaleController extends Controller
 {
-    // Listado de ventas (con cliente y vendedor cargados)
-    public function index()
-    {
-        $sales = Sale::with(['customer', 'user'])->latest('date')->get();
+    private const FACTOR_IGV = 18 / 118;
 
-        return view('management.sales.index', compact('sales'));
+    private const VISTA_INDICE = 'management.sales.index';
+    private const VISTA_CREAR = 'management.sales.create';
+    private const VISTA_DETALLE = 'management.sales.show';
+
+    public function index(): View
+    {
+        $ventas = Sale::with(['customer', 'user'])
+            ->latest('date')
+            ->get();
+
+        return view(self::VISTA_INDICE, [
+            'sales' => $ventas,
+        ]);
     }
 
-    // Formulario para registrar una venta
-    public function create()
+    public function create(): View
     {
-        $customers = Customer::orderBy('name')->get();
-        $users = User::orderBy('name')->get();
-        $medicines = Medicine::where('stock', '>', 0)->orderBy('name')->get();
-
-        return view('management.sales.create', compact('customers', 'users', 'medicines'));
+        return view(self::VISTA_CREAR, [
+            'customers' => Customer::query()->orderBy('name')->get(),
+            'users' => User::query()->orderBy('name')->get(),
+            'medicines' => Medicine::query()->where('stock', '>', 0)->orderBy('name')->get(),
+        ]);
     }
 
-    // Guardar la venta con sus detalles
-    public function store(Request $request)
+    /**
+     * @throws Throwable
+     */
+    public function store(Request $request): RedirectResponse
     {
-        $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'user_id' => 'required|exists:users,id',
-            'items' => 'required|array|min:1',
-            'items.*.medicine_id' => 'required|distinct|exists:medicines,id',
-            'items.*.amount' => 'required|integer|min:1',
+        $entrada = $this->validarSolicitud($request);
+
+        DB::beginTransaction();
+
+        try {
+            $cabeceraVenta = new Sale();
+            $cabeceraVenta->fill([
+                'customer_id' => $entrada['customer_id'],
+                'user_id' => $entrada['user_id'],
+                'date' => now(),
+                'total' => 0,
+                'igv' => 0,
+            ])->save();
+
+            $lineasDetalle = $this->construirDetallesYDescontarStock($entrada['items']);
+            $cabeceraVenta->details()->createMany($lineasDetalle);
+
+            $totalGeneral = collect($lineasDetalle)->sum('subtotal');
+
+            $cabeceraVenta->fill([
+                'total' => $totalGeneral,
+                'igv' => round($totalGeneral * self::FACTOR_IGV, 2),
+            ])->save();
+
+            DB::commit();
+
+            return redirect()
+                ->route('sales.show', $cabeceraVenta)
+                ->with('ok', 'Venta registrada');
+        } catch (Throwable $excepcion) {
+            DB::rollBack();
+            throw $excepcion;
+        }
+    }
+
+    public function show(Sale $sale): View
+    {
+        $sale->loadMissing(['customer', 'user', 'details.medicine']);
+
+        return view(self::VISTA_DETALLE, [
+            'sale' => $sale,
+        ]);
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function destroy(Sale $sale): RedirectResponse
+    {
+        DB::beginTransaction();
+
+        try {
+            $sale->details()->each(function ($linea): void {
+                Medicine::query()
+                    ->where('id', $linea->medicine_id)
+                    ->increment('stock', $linea->amount);
+            });
+
+            $sale->delete();
+
+            DB::commit();
+
+            return redirect()
+                ->route('sales.index')
+                ->with('ok', 'Venta anulada y stock devuelto');
+        } catch (Throwable $excepcion) {
+            DB::rollBack();
+            throw $excepcion;
+        }
+    }
+
+    private function validarSolicitud(Request $request): array
+    {
+        return $request->validate([
+            'customer_id' => ['required', 'integer', 'exists:customers,id'],
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.medicine_id' => ['required', 'integer', 'distinct', 'exists:medicines,id'],
+            'items.*.amount' => ['required', 'integer', 'min:1'],
         ], [
             'items.required' => 'Debe agregar al menos un medicamento.',
             'items.*.medicine_id.distinct' => 'No repita el mismo medicamento, aumente la cantidad.',
         ]);
+    }
 
-        // Transacción: si algo falla, no se guarda nada
-        $sale = DB::transaction(function () use ($request) {
-            // 1. Crear la venta (el total se calcula después)
-            $sale = Sale::create([
-                'customer_id' => $request->customer_id,
-                'user_id' => $request->user_id,
-                'date' => now(),
-                'total' => 0,
-                'igv' => 0,
-            ]);
+    private function construirDetallesYDescontarStock(array $items): array
+    {
+        $detallesPreparados = [];
 
-            $total = 0;
+        foreach ($items as $item) {
+            $producto = Medicine::query()
+                ->lockForUpdate()
+                ->findOrFail($item['medicine_id']);
 
-            // 2. Registrar cada medicamento vendido
-            foreach ($request->items as $item) {
-                // lockForUpdate(): bloquea la fila hasta terminar, para que dos ventas a la vez no vendan el mismo stock
-                $medicine = Medicine::lockForUpdate()->find($item['medicine_id']);
+            $unidades = (int) $item['amount'];
 
-                if ($medicine->stock < $item['amount']) {
-                    // Lanzar la excepción deshace todo lo guardado en la transacción (rollback)
-                    throw ValidationException::withMessages([
-                        'items' => "Stock insuficiente para {$medicine->name} (disponible: {$medicine->stock}).",
-                    ]);
-                }
-
-                // El precio se toma de la base de datos, no del formulario
-                $subtotal = $medicine->price * $item['amount'];
-
-                $sale->details()->create([
-                    'medicine_id' => $medicine->id,
-                    'amount' => $item['amount'],
-                    'price_unit' => $medicine->price,
-                    'subtotal' => $subtotal,
+            if ($producto->stock < $unidades) {
+                throw ValidationException::withMessages([
+                    'items' => "Stock insuficiente para {$producto->name} (disponible: {$producto->stock}).",
                 ]);
-
-                // 3. Descontar el stock
-                $medicine->decrement('stock', $item['amount']);
-
-                $total += $subtotal;
             }
 
-            // 4. Guardar total e IGV (el precio ya incluye el 18% de IGV)
-            $sale->update([
-                'total' => $total,
-                'igv' => round($total * 18 / 118, 2),
-            ]);
+            $producto->decrement('stock', $unidades);
 
-            return $sale;
-        });
+            $detallesPreparados[] = [
+                'medicine_id' => $producto->id,
+                'amount' => $unidades,
+                'price_unit' => $producto->price,
+                'subtotal' => (float) $producto->price * $unidades,
+            ];
+        }
 
-        return to_route('sales.show', $sale)->with('ok', 'Venta registrada');
-    }
-
-    // Ver el detalle de una venta
-    public function show(Sale $sale)
-    {
-        $sale->load(['customer', 'user', 'details.medicine']);
-
-        return view('management.sales.show', compact('sale'));
-    }
-
-    // Anular venta: devuelve el stock y la elimina
-    public function destroy(Sale $sale)
-    {
-        DB::transaction(function () use ($sale) {
-            foreach ($sale->details as $detail) {
-                Medicine::where('id', $detail->medicine_id)->increment('stock', $detail->amount);
-            }
-
-            // Los detalles se borran solos (cascadeOnDelete en la migración)
-            $sale->delete();
-        });
-
-        return to_route('sales.index')->with('ok', 'Venta anulada y stock devuelto');
+        return $detallesPreparados;
     }
 }

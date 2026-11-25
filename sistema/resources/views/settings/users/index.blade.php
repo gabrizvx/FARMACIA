@@ -1,7 +1,5 @@
-{{-- Hereda la plantilla padre: menú, encabezado y estilos --}}
 @extends('template.administrador')
 
-{{-- Rellena los huecos (@yield) de la plantilla --}}
 @section('title', 'Usuarios')
 @section('name_section', 'Usuarios')
 @section('description', 'Listado de registros de usuarios')
@@ -22,7 +20,6 @@
         </div>
     </div>
     <div class="card-body">
-        {{-- Mensajes flash: ok (verde) y error (rojo) --}}
         @include('partials.alerts')
 
         <h6 class="text-uppercase small text-muted mb-3">Total de registros encontrados: {{ $users->count() }}</h6>
@@ -39,10 +36,9 @@
                 </tr>
             </thead>
             <tbody>
-                {{-- @forelse recorre la colección; si está vacía muestra el bloque @empty --}}
                 @forelse ($users as $user)
                 <tr>
-                    <td class="text-center align-middle">{{ $loop->iteration }} {{-- 1, 2, 3... --}}</td>
+                    <td class="text-center align-middle">{{ $loop->iteration }}</td>
                     <td class="text-start align-middle">{{ $user->name }}</td>
                     <td class="text-center align-middle">{{ $user->dni }}</td>
                     <td class="text-start align-middle">{{ $user->email }}</td>
@@ -57,9 +53,9 @@
                                 <li><a class="dropdown-item" href="{{ route('users.edit', $user) }}">Editar</a></li>
                                 <li>
                                     <form action="{{ route('users.destroy', $user) }}" method="POST"
-                                        onsubmit="return confirm('¿Seguro que desea eliminar este usuario?')">
+                                          onsubmit="return confirm('¿Seguro que desea eliminar este usuario?')">
                                         @csrf
-                                        @method('DELETE') {{-- verbo real: destroy() --}}
+                                        @method('DELETE')
                                         <button type="submit" class="dropdown-item text-danger">Eliminar</button>
                                     </form>
                                 </li>

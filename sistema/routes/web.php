@@ -5,6 +5,9 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MedicineController;
+use App\Http\Controllers\PasswordController;
+use App\Http\Controllers\PreferenceController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SaleController;
@@ -18,8 +21,16 @@ Route::middleware('guest')->group(function (): void {
 });
 
 // Rutas protegidas (requieren iniciar sesión)
-Route::middleware('auth')->group(function (): void {
+Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/account/password', [PasswordController::class, 'edit'])->name('password.edit');
+    Route::put('/account/password', [PasswordController::class, 'update'])->name('password.update');
+    Route::get('/preferences', [PreferenceController::class, 'edit'])->name('preferences.edit');
+    Route::put('/preferences', [PreferenceController::class, 'update'])->name('preferences.update');
+    Route::post('/preferences/reset', [PreferenceController::class, 'reset'])->name('preferences.reset');
 
     // Redirección inicial al dashboard
     Route::get('/', fn () => redirect()->route('dashboard.index'));

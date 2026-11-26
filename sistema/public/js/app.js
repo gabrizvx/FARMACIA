@@ -7,6 +7,11 @@ function initSidebarToggle() {
   document.body.appendChild(overlay);
 
   const isDesktop = () => window.innerWidth >= 992;
+  let wasDesktop = isDesktop();
+
+  if (wasDesktop && document.documentElement.dataset.sidebarDefaultCollapsed === 'true') {
+    sidebar.classList.add('sidebar-collapsed');
+  }
 
   const closeMobile = () => {
     sidebar.classList.remove('sidebar-open');
@@ -30,6 +35,132 @@ function initSidebarToggle() {
 
   document.getElementById('sidebarClose')?.addEventListener('click', closeMobile);
   overlay.addEventListener('click', closeMobile);
+
+  window.addEventListener('resize', () => {
+    const isDesktopNow = isDesktop();
+
+    if (isDesktopNow !== wasDesktop) {
+      sidebar.classList.toggle(
+        'sidebar-collapsed',
+        isDesktopNow && document.documentElement.dataset.sidebarDefaultCollapsed === 'true'
+      );
+      closeMobile();
+      wasDesktop = isDesktopNow;
+    }
+  });
+}
+
+function initAccountPreferences() {
+  const root = document.documentElement;
+  const theme = root.dataset.userTheme;
+  const systemTheme = window.matchMedia?.('(prefers-color-scheme: dark)');
+  const applyTheme = () => {
+    const useDarkTheme = theme === 'dark' || (theme === 'system' && systemTheme?.matches);
+    root.setAttribute('data-bs-theme', useDarkTheme ? 'dark' : 'light');
+  };
+
+  applyTheme();
+  if (theme === 'system' && systemTheme) {
+    systemTheme.addEventListener?.('change', applyTheme);
+  }
+
+  document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const input = document.querySelector(button.dataset.target);
+      if (!input) return;
+
+      const visible = input.type === 'text';
+      input.type = visible ? 'password' : 'text';
+      button.setAttribute('aria-label', visible ? 'Mostrar contraseña' : 'Ocultar contraseña');
+      const icon = button.querySelector('i');
+      if (icon) icon.className = `bi ${visible ? 'bi-eye' : 'bi-eye-slash'} text-secondary`;
+    });
+  });
+
+  const password = document.querySelector('[data-new-password]');
+  const confirmation = document.querySelector('[data-confirm-password]');
+  const lengthRequirement = document.querySelector('[data-password-requirement-length]');
+  const matchRequirement = document.querySelector('[data-password-requirement-match]');
+
+  if (password && confirmation) {
+    const updatePasswordRequirements = () => {
+      lengthRequirement?.classList.toggle('is-met', password.value.length >= 8);
+      matchRequirement?.classList.toggle(
+        'is-met',
+        confirmation.value.length > 0 && password.value === confirmation.value
+      );
+    };
+
+    password.addEventListener('input', updatePasswordRequirements);
+    confirmation.addEventListener('input', updatePasswordRequirements);
+  }
+
+  const photoInput = document.querySelector('[data-profile-photo-input]');
+  const photoPreview = document.querySelector('[data-profile-photo-preview]');
+  const photoPlaceholder = document.querySelector('[data-profile-photo-placeholder]');
+  const removePhoto = document.querySelector('[data-remove-profile-photo]');
+  const photoError = document.querySelector('[data-profile-photo-error]');
+  let previewUrl = null;
+
+  if (photoInput && photoPreview && photoPlaceholder) {
+    const originalSource = photoPreview.dataset.originalSrc;
+    const updatePhotoPreview = () => {
+      if (removePhoto?.checked) {
+        photoPreview.classList.add('d-none');
+        photoPlaceholder.classList.remove('d-none');
+        return;
+      }
+
+      const file = photoInput.files?.[0];
+      if (file && previewUrl) {
+        photoPreview.src = previewUrl;
+        photoPreview.classList.remove('d-none');
+        photoPlaceholder.classList.add('d-none');
+      } else if (originalSource) {
+        photoPreview.src = originalSource;
+        photoPreview.classList.remove('d-none');
+        photoPlaceholder.classList.add('d-none');
+      } else {
+        photoPreview.classList.add('d-none');
+        photoPlaceholder.classList.remove('d-none');
+      }
+    };
+
+    photoInput.addEventListener('change', () => {
+      const file = photoInput.files?.[0];
+      if (!file) {
+        updatePhotoPreview();
+        return;
+      }
+
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type) || file.size > 2 * 1024 * 1024) {
+        if (photoError) {
+          photoError.textContent = 'Selecciona una imagen JPG, PNG o WebP de máximo 2 MB.';
+          photoError.classList.remove('d-none');
+        }
+        photoInput.value = '';
+        updatePhotoPreview();
+        return;
+      }
+
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = URL.createObjectURL(file);
+      if (photoError) photoError.classList.add('d-none');
+      if (removePhoto) removePhoto.checked = false;
+      updatePhotoPreview();
+    });
+
+    removePhoto?.addEventListener('change', updatePhotoPreview);
+  }
+
+  document.querySelectorAll('[data-confirm-preferences-reset]').forEach((form) => {
+    form.addEventListener('submit', (event) => {
+      if (!window.confirm('¿Restaurar las preferencias predeterminadas?')) {
+        event.preventDefault();
+      }
+    });
+  });
 }
 
 function initUserDropdown() {
@@ -99,4 +230,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initLogoutConfirm();
   initTooltips();
   initLoginForm();
+  initAccountPreferences();
 });

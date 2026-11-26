@@ -84,7 +84,11 @@
               aria-haspopup="true"
               aria-label="Opciones de cuenta">
         <div class="user-avatar rounded-circle bg-primary d-flex align-items-center justify-content-center flex-shrink-0">
+          @if (auth()->user()->profile_photo_path)
+          <img src="{{ asset('storage/' . auth()->user()->profile_photo_path) }}" alt="" class="user-avatar-image rounded-circle">
+          @else
           <span class="text-white fw-bold lh-1">{{ mb_strtoupper(mb_substr(auth()->user()->name, 0, 2)) }}</span>
+          @endif
         </div>
         <div class="lh-sm overflow-hidden flex-grow-1 text-start">
           <div class="text-white fw-semibold small">{{ auth()->user()->name }}</div>
@@ -96,7 +100,11 @@
         <li class="px-3 py-2 border-bottom" style="background:var(--bs-tertiary-bg)">
           <div class="d-flex align-items-center gap-2">
             <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center flex-shrink-0" style="width:40px;height:40px">
+              @if (auth()->user()->profile_photo_path)
+              <img src="{{ asset('storage/' . auth()->user()->profile_photo_path) }}" alt="" class="user-avatar-image rounded-circle">
+              @else
               <span class="text-white fw-bold small">{{ mb_strtoupper(mb_substr(auth()->user()->name, 0, 2)) }}</span>
+              @endif
             </div>
             <div class="lh-sm overflow-hidden">
               <div class="fw-semibold small">{{ auth()->user()->name }}</div>
@@ -105,9 +113,9 @@
             </div>
           </div>
         </li>
-        <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 small" href="#" data-bs-toggle="modal" data-bs-target="#profileModal"><i class="bi bi-person-circle fs-6 text-secondary"></i>Mi Perfil</a></li>
-        <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 small" href="#"><i class="bi bi-shield-lock fs-6 text-secondary"></i>Cambiar Contraseña</a></li>
-        <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 small" href="#"><i class="bi bi-sliders fs-6 text-secondary"></i>Preferencias</a></li>
+        <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 small" href="{{ route('profile.edit') }}"><i class="bi bi-person-circle fs-6 text-secondary"></i>Mi Perfil</a></li>
+        <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 small" href="{{ route('password.edit') }}"><i class="bi bi-shield-lock fs-6 text-secondary"></i>Cambiar Contraseña</a></li>
+        <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 small" href="{{ route('preferences.edit') }}"><i class="bi bi-sliders fs-6 text-secondary"></i>Preferencias</a></li>
         <li><hr class="dropdown-divider my-1"></li>
         <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 small text-danger fw-medium" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal"><i class="bi bi-box-arrow-right fs-6"></i>Cerrar Sesión</a></li>
       </ul>

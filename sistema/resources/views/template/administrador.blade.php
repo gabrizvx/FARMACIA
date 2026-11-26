@@ -1,5 +1,25 @@
+@php
+  $layoutAccountPreferences = auth()->user()->preferences;
+  $layoutTheme = in_array($layoutAccountPreferences?->theme, ['light', 'dark', 'system'], true)
+      ? $layoutAccountPreferences->theme
+      : 'system';
+  $layoutAccent = in_array($layoutAccountPreferences?->accent_color, ['brand', 'blue', 'teal', 'violet'], true)
+      ? $layoutAccountPreferences->accent_color
+      : 'brand';
+  $layoutDensity = in_array($layoutAccountPreferences?->density, ['comfortable', 'compact'], true)
+      ? $layoutAccountPreferences->density
+      : 'comfortable';
+@endphp
 <!doctype html>
-<html lang="es" dir="ltr">
+<html
+  lang="es"
+  dir="ltr"
+  data-user-theme="{{ $layoutTheme }}"
+  data-user-accent="{{ $layoutAccent }}"
+  data-ui-density="{{ $layoutDensity }}"
+  data-sidebar-default-collapsed="{{ $layoutAccountPreferences?->sidebar_collapsed ? 'true' : 'false' }}"
+  data-bs-theme="{{ $layoutTheme === 'dark' ? 'dark' : 'light' }}"
+>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">

@@ -67,8 +67,18 @@ footer { position: fixed; bottom: -10mm; left: 0; right: 0; text-align: center; 
 <thead><tr><th>Medicamento</th><th>Categoría</th><th class="right">Precio venta</th><th class="right">Stock</th><th>Estado</th></tr></thead>
 <tbody>
 @forelse($medicines as $medicine)
-<tr><td>{{ $medicine->name }}</td><td>{{ $medicine->category->name }}</td><td class="right">S/ {{ number_format($medicine->price,2) }}</td><td class="right">{{ $medicine->stock }}</td><td>@if($medicine->stock===0)Agotado@elseif($medicine->stock<=10)Stock bajo@elseDisponible@endif</td></tr>
-@empty<tr><td colspan="5" class="center">No hay medicamentos registrados</td></tr>@endforelse
+<tr><td>{{ $medicine->name }}</td><td>{{ $medicine->category->name }}</td><td class="right">S/ {{ number_format($medicine->price,2) }}</td><td class="right">{{ $medicine->stock }}</td><td>
+@if($medicine->stock===0)
+Agotado
+@elseif($medicine->stock<=10)
+Stock bajo
+@else
+Disponible
+@endif
+</td></tr>
+@empty
+<tr><td colspan="5" class="center">No hay medicamentos registrados</td></tr>
+@endforelse
 </tbody>
 </table>
 @endif

@@ -56,3 +56,11 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## FARM SJB: PWA y exportación
+
+La aplicación puede instalarse como PWA desde navegadores compatibles. En desarrollo, `localhost` y `127.0.0.1` son contextos seguros; en producción se debe publicar el sistema mediante HTTPS y configurar `APP_URL` con la URL HTTPS y `SESSION_SECURE_COOKIE=true`.
+
+El Service Worker de `public/sw.js` almacena únicamente recursos estáticos incluidos explícitamente en su lista; no guarda páginas autenticadas ni respuestas de operaciones. Al publicar cambios en los recursos offline, incrementa la versión de `CACHE_NAME` para reemplazar la caché anterior.
+
+La exportación XLSX existente (`/reports/export/xlsx`) utiliza Maatwebsite Excel y conserva los filtros y permisos definidos para Reportes.

@@ -24,8 +24,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="San Juan – Sistema de Venta de Medicamentos">
+  <meta name="theme-color" content="#ff0a41">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="FARM SJB">
+  <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+  <link rel="apple-touch-icon" href="{{ asset('icons/apple-touch-icon.png') }}">
   <title>FARM SJB | @yield('title')</title>
   <link rel="stylesheet" href="{{ asset('css/bootstrap.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/bootstrap-icons.min.css') }}">
   <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
 </head>
 
@@ -83,7 +89,6 @@
 <!-- MODAL — Confirmar Cierre de Sesión -->
 @include('partials.modal-logout')
 
-<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
 <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
 <script src="{{ asset('js/app.js') }}"></script>
 @stack('scripts')

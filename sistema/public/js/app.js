@@ -163,6 +163,76 @@ function initAccountPreferences() {
   });
 }
 
+function initPwaExperience() {
+  let offlineNotice = null;
+  const updateConnectionStatus = () => {
+    if (navigator.onLine) {
+      offlineNotice?.remove();
+      offlineNotice = null;
+      return;
+    }
+
+    if (!offlineNotice) {
+      offlineNotice = document.createElement('div');
+      offlineNotice.className = 'pwa-offline-notice';
+      offlineNotice.setAttribute('role', 'status');
+      offlineNotice.setAttribute('aria-live', 'polite');
+      offlineNotice.textContent = 'Sin conexión. Solo están disponibles los recursos básicos; las operaciones requieren Internet.';
+      document.body.prepend(offlineNotice);
+    }
+  };
+
+  window.addEventListener('offline', updateConnectionStatus);
+  window.addEventListener('online', updateConnectionStatus);
+  updateConnectionStatus();
+
+  if ('serviceWorker' in navigator && window.isSecureContext) {
+    navigator.serviceWorker.register('/sw.js').catch((error) => {
+      console.error('No se pudo registrar el Service Worker de FARM SJB.', error);
+    });
+  }
+
+  if (!('serviceWorker' in navigator)) return;
+
+  let deferredInstallPrompt = null;
+  let installButton = null;
+  const isStandalone = window.matchMedia?.('(display-mode: standalone)').matches
+    || navigator.standalone === true;
+
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    if (isStandalone) return;
+
+    deferredInstallPrompt = event;
+    if (installButton) return;
+
+    installButton = document.createElement('button');
+    installButton.type = 'button';
+    installButton.className = 'btn btn-primary pwa-install-button';
+    installButton.textContent = 'Instalar FARM SJB';
+    installButton.addEventListener('click', async () => {
+      if (!deferredInstallPrompt) return;
+
+      try {
+        await deferredInstallPrompt.prompt();
+        await deferredInstallPrompt.userChoice;
+        deferredInstallPrompt = null;
+        installButton.remove();
+        installButton = null;
+      } catch (error) {
+        console.error('No se pudo iniciar la instalación de FARM SJB.', error);
+      }
+    });
+    document.body.appendChild(installButton);
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    installButton?.remove();
+    installButton = null;
+  });
+}
+
 function initUserDropdown() {
   const toggle = document.getElementById('userMenuToggle');
   if (!toggle) return;
@@ -231,4 +301,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initTooltips();
   initLoginForm();
   initAccountPreferences();
+  initPwaExperience();
 });

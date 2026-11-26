@@ -1,3 +1,11 @@
+@font-face {
+  font-family: Montserrat;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../fonts/Montserrat-Regular.woff2") format("woff2");
+}
+
 body { background-color: var(--bs-tertiary-bg); color: var(--bs-body-color); }
 
 :root[data-user-accent="blue"] {
@@ -178,6 +186,24 @@ body { background-color: var(--bs-tertiary-bg); color: var(--bs-body-color); }
 .login-brand-copy { max-width: 400px; }
 
 .login-card { max-width: 400px; }
+
+.pwa-install-button {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+  z-index: 1080;
+}
+
+.pwa-offline-notice {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 1090;
+  padding: .75rem 1rem;
+  background: #7f1d1d;
+  color: #fff;
+  text-align: center;
+  font-size: .9rem;
+}
 
 .login-input-group .input-group-text { border-color: var(--bs-border-color); }
 .login-input-group .form-control:focus { box-shadow: none; }

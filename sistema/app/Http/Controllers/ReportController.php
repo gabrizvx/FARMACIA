@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Exports\ReportsExport;
 use App\Models\Customer;
 use App\Models\Medicine;
 use App\Models\Sale;
@@ -12,11 +13,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Border;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ReportController extends Controller
@@ -31,70 +28,9 @@ class ReportController extends Controller
     public function exportXlsx(Request $request): BinaryFileResponse
     {
         $datos = $this->construirReporte($request);
-        $libro = new Spreadsheet();
-        $ventasHoja = $libro->getActiveSheet();
-        $ventasHoja->setTitle('Ventas');
+        $nombreArchivo = 'reporte-farmacia-' . now()->format('Y-m-d-His') . '.xlsx';
 
-        $this->aplicarCabeceraDocumento($ventasHoja, 'Reporte de ventas');
-        $this->escribirFiltros($ventasHoja, $datos['filters'], $datos['generatedAt']);
-
-        $encabezados = ['Código', 'Fecha', 'Cliente', 'Vendedor', 'Subtotal', 'IGV', 'Total', 'Estado'];
-        $fila = 8;
-        foreach ($encabezados as $columna => $titulo) {
-            $ventasHoja->setCellValue([$columna + 1, $fila], $titulo);
-        }
-
-        foreach ($datos['sales'] as $sale) {
-            $fila++;
-            $subtotal = (float) $sale->total - (float) $sale->igv;
-            $ventasHoja->setCellValueExplicit('A' . $fila, str_pad((string) $sale->id, 6, '0', STR_PAD_LEFT), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-            $ventasHoja->setCellValue('B' . $fila, $sale->date->format('d/m/Y H:i'));
-            $ventasHoja->setCellValue('C' . $fila, $sale->customer->name);
-            $ventasHoja->setCellValue('D' . $fila, $sale->user->name);
-            $ventasHoja->setCellValue('E' . $fila, $subtotal);
-            $ventasHoja->setCellValue('F' . $fila, (float) $sale->igv);
-            $ventasHoja->setCellValue('G' . $fila, (float) $sale->total);
-            $ventasHoja->setCellValue('H' . $fila, 'Completada');
-        }
-
-        $this->aplicarEstilosTabla($ventasHoja, 8, $fila, 8);
-        $ventasHoja->getStyle('E9:G' . $fila)->getNumberFormat()->setFormatCode('"S/" #,##0.00');
-        $ventasHoja->freezePane('A9');
-        $ventasHoja->setAutoFilter('A8:H' . $fila);
-
-        if ($datos['user']->hasRole('Administrador', 'Químico farmacéutico')) {
-            $medicinasHoja = $libro->createSheet();
-            $medicinasHoja->setTitle('Medicamentos');
-            $this->aplicarCabeceraDocumento($medicinasHoja, 'Reporte de medicamentos');
-            $this->escribirFiltros($medicinasHoja, $datos['filters'], $datos['generatedAt']);
-
-            $titulosMedicamentos = ['Medicamento', 'Categoría', 'Precio de venta', 'Stock', 'Estado'];
-            $filaMedicamentos = 8;
-            foreach ($titulosMedicamentos as $columna => $titulo) {
-                $medicinasHoja->setCellValue([$columna + 1, $filaMedicamentos], $titulo);
-            }
-
-            foreach ($datos['medicines'] as $medicine) {
-                $filaMedicamentos++;
-                $estado = $medicine->stock === 0 ? 'Agotado' : ($medicine->stock <= 10 ? 'Stock bajo' : 'Disponible');
-                $medicinasHoja->setCellValue('A' . $filaMedicamentos, $medicine->name);
-                $medicinasHoja->setCellValue('B' . $filaMedicamentos, $medicine->category->name);
-                $medicinasHoja->setCellValue('C' . $filaMedicamentos, (float) $medicine->price);
-                $medicinasHoja->setCellValue('D' . $filaMedicamentos, (int) $medicine->stock);
-                $medicinasHoja->setCellValue('E' . $filaMedicamentos, $estado);
-            }
-
-            $this->aplicarEstilosTabla($medicinasHoja, 8, $filaMedicamentos, 5);
-            $medicinasHoja->getStyle('C9:C' . $filaMedicamentos)->getNumberFormat()->setFormatCode('"S/" #,##0.00');
-            $medicinasHoja->freezePane('A9');
-            $medicinasHoja->setAutoFilter('A8:E' . $filaMedicamentos);
-        }
-
-        $ruta = storage_path('app/temp-reporte-' . now()->format('YmdHis') . '.xlsx');
-        (new Xlsx($libro))->save($ruta);
-        $libro->disconnectWorksheets();
-
-        return response()->download($ruta, 'reporte-farmacia-' . now()->format('Y-m-d-His') . '.xlsx')->deleteFileAfterSend(true);
+        return Excel::download(new ReportsExport($datos), $nombreArchivo);
     }
 
     public function exportPdf(Request $request): Response
@@ -202,47 +138,4 @@ class ReportController extends Controller
         ];
     }
 
-    private function aplicarCabeceraDocumento($hoja, string $titulo): void
-    {
-        $hoja->mergeCells('A1:H1');
-        $hoja->setCellValue('A1', 'FARM SJB');
-        $hoja->mergeCells('A2:H2');
-        $hoja->setCellValue('A2', 'Sistema de Venta de Medicamentos');
-        $hoja->mergeCells('A3:H3');
-        $hoja->setCellValue('A3', $titulo);
-
-        $hoja->getStyle('A1:H3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $hoja->getStyle('A1')->getFont()->setBold(true)->setSize(16)->getColor()->setARGB('FFFFFFFF');
-        $hoja->getStyle('A1:A3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF111827');
-        $hoja->getStyle('A2:A3')->getFont()->setBold(true)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FFFFFFFF'));
-    }
-
-    private function escribirFiltros($hoja, array $filters, $generado): void
-    {
-        $hoja->setCellValue('A5', 'Fecha de generación');
-        $hoja->setCellValue('B5', $generado->format('d/m/Y H:i'));
-        $hoja->setCellValue('D5', 'Periodo');
-        $hoja->setCellValue('E5', $filters['period']);
-        $hoja->setCellValue('G5', 'Cliente');
-        $hoja->setCellValue('H5', $filters['customer_name'] ?? 'Todos');
-        $hoja->getStyle('A5:H5')->getFont()->setBold(true);
-    }
-
-    private function aplicarEstilosTabla($hoja, int $filaEncabezado, int $ultimaFila, int $ultimaColumna): void
-    {
-        $rango = 'A' . $filaEncabezado . ':' . chr(64 + $ultimaColumna) . $ultimaFila;
-        $hoja->getStyle($rango)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('FFD1D5DB');
-
-        $hoja->getStyle('A' . $filaEncabezado . ':' . chr(64 + $ultimaColumna) . $filaEncabezado)
-            ->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFFF0A41');
-        $hoja->getStyle('A' . $filaEncabezado . ':' . chr(64 + $ultimaColumna) . $filaEncabezado)
-            ->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
-        $hoja->getStyle('A' . $filaEncabezado . ':' . chr(64 + $ultimaColumna) . $filaEncabezado)
-            ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-        for ($columna = 1; $columna <= $ultimaColumna; $columna++) {
-            $letra = chr(64 + $columna);
-            $hoja->getColumnDimension($letra)->setAutoSize(true);
-        }
-    }
 }
